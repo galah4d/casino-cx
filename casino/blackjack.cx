@@ -1,0 +1,101 @@
+package main
+
+type BlackJack struct {
+  textures [52]i32
+}
+
+func newBlackJack() (blackjack BlackJack) {
+  var _textures [52]i32
+  _textures = loadTextures("DEFAULT")
+
+  blackjack := BlackJack{
+    textures: _textures}
+}
+
+type Card struct {
+  x f32
+  y f32
+  width i32
+  height f32
+}
+
+func loadTextures(deck str) (textures [52]i32) {
+  var textures [52]i32
+
+  var wd str
+	wd = os.GetWorkingDirectory()
+
+  if name == "DEFAULT" {
+    textures[0] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/2C.png"))
+    textures[1] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/3C.png"))
+    textures[2] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/4C.png"))
+    textures[3] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/5C.png"))
+    textures[4] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/6C.png"))
+    textures[5] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/7C.png"))
+    textures[6] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/8C.png"))
+    textures[7] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/9C.png"))
+    textures[8] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/10C.png"))
+    textures[9] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/QC.png"))
+    textures[10] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/JC.png"))
+    textures[11] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/KC.png"))
+    textures[12] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/AC.png"))
+
+    textures[13] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/2D.png"))
+    textures[14] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/3D.png"))
+    textures[15] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/4D.png"))
+    textures[16] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/5D.png"))
+    textures[17] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/6D.png"))
+    textures[18] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/7D.png"))
+    textures[19] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/8D.png"))
+    textures[20] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/9D.png"))
+    textures[21] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/10D.png"))
+    textures[22] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/QD.png"))
+    textures[23] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/JD.png"))
+    textures[24] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/KD.png"))
+    textures[25] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/AD.png"))
+
+    textures[26] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/2H.png"))
+    textures[27] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/3H.png"))
+    textures[28] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/4H.png"))
+    textures[29] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/5H.png"))
+    textures[30] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/6H.png"))
+    textures[31] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/7H.png"))
+    textures[32] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/8H.png"))
+    textures[33] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/9H.png"))
+    textures[34] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/10H.png"))
+    textures[35] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/QH.png"))
+    textures[36] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/JH.png"))
+    textures[37] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/KH.png"))
+    textures[38] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/AH.png"))
+
+    textures[39] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/2S.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/3S.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/4S.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/5S.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/6S.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/7S.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/8S.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/9S.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/10S.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/QS.png"))
+    textures[40] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/JS.png"))
+    textures[50] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/KS.png"))
+    textures[51] = gl.NewTexture(sprintf("%s%s", wd, "textures/blackjack/deck/AS.png"))
+  }
+}
+
+func getCard() (card_figure i32, card_suit i32) {
+  card_figure := i32.rand(2, 15)
+  card_suit := i32.rand(0, 4)
+}
+
+func getCardTexture(card_figure i32, card_suit i32) (texture i32) {
+  var texture i32
+
+  var
+  if card_
+}
+
+func main() {
+  i32.print(getCard())
+}

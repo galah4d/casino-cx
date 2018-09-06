@@ -1,0 +1,253 @@
+package main
+
+import "gl"
+import "glfw"
+import "os"
+
+import "graphical"
+import "slots"
+
+var SCREEN_WIDTH i32 = 1920
+var SCREEN_HEIGHT i32 = 1000
+
+var EXIT_FLAG bool = false
+var current_screen graphical.Screen
+
+var slot_machine slots.SlotMachine
+
+func initOpenGL () (program i32) {
+	gl.Init()
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+	var program i32
+	program = gl.CreateProgram()
+
+	gl.LinkProgram(program)
+}
+
+func initGlfw (window str) () {
+	glfw.Init()
+	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.ContextVersionMajor, 2)
+	glfw.WindowHint(glfw.ContextVersionMinor, 1)
+
+	glfw.CreateWindow("window", SCREEN_WIDTH, SCREEN_HEIGHT, "Skycoin Slots")
+	glfw.MakeContextCurrent("window")
+}
+
+func keyboardManagerMainScreen(window str, key i32, scancode i32, action i32, mods i32) {
+	var button_type str
+	// Enter
+	if bool.and(i32.eq(key, 257), i32.eq(action, 1)) {
+		button_type = graphical.getActiveButton(current_screen)
+		if button_type == "PLAY" {
+			setScreen("SELECTION SCREEN")
+		}
+		if button_type == "ACCOUNT" {
+			setScreen("ACCOUNT SCREEN")
+		}
+		if button_type == "EXIT" {
+			str.print("EXIT")
+			EXIT_FLAG = true
+		}
+	}
+}
+
+func keyboardManagerAccountScreen(window str, key i32, scancode i32, action i32, mods i32) {
+	var button_type str
+	// Enter
+	if bool.and(i32.eq(key, 257), i32.eq(action, 1)) {
+		button_type = graphical.getActiveButton(current_screen)
+		if button_type == "DEPOSIT" {
+			setScreen("DEPOSIT SCREEN")
+		}
+		if button_type == "WITHDRAW" {
+			setScreen("WITHDRAW SCREEN")
+		}
+		if button_type == "RETURN" {
+			setScreen("MAIN SCREEN")
+		}
+	}
+}
+
+func keyboardManagerDepositScreen(window str, key i32, scancode i32, action i32, mods i32) {
+	var button_type str
+	// Enter
+	if bool.and(i32.eq(key, 257), i32.eq(action, 1)) {
+		button_type = graphical.getActiveButton(current_screen)
+		if button_type == "RETURN" {
+			setScreen("ACCOUNT SCREEN")
+		}
+	}
+}
+
+func keyboardManagerWithdrawScreen(window str, key i32, scancode i32, action i32, mods i32) {
+	var button_type str
+	// Enter
+	if bool.and(i32.eq(key, 257), i32.eq(action, 1)) {
+		button_type = graphical.getActiveButton(current_screen)
+		if button_type == "RETURN" {
+			setScreen("ACCOUNT SCREEN")
+		}
+	}
+}
+
+func keyboardManagerSelectionScreen(window str, key i32, scancode i32, action i32, mods i32) {
+	var button_type str
+	// Enter
+	if bool.and(i32.eq(key, 257), i32.eq(action, 1)) {
+		button_type = graphical.getActiveButton(current_screen)
+		if button_type == "SLOTS-SELECTION" {
+			setScreen("SLOTS SCREEN")
+		}
+	}
+
+	// Esc
+	if bool.and(i32.eq(key, 256), i32.eq(action, 1)) {
+		setScreen("MAIN SCREEN")
+	}
+}
+
+func keyboardManagerSlotsScreen(window str, key i32, scancode i32, action i32, mods i32) {
+	var button_type str
+	// Enter
+	if bool.and(i32.eq(key, 257), i32.eq(action, 1)) {
+		button_type = graphical.getActiveButton(current_screen)
+		if button_type == "SPIN-ALL-ROWS" {
+				slot_machine = slots.spin(slot_machine, true, true, true)
+		}
+		if button_type == "SPIN-ROW-1" {
+			slot_machine = slots.spin(slot_machine, true, false, false)
+		}
+		if button_type == "SPIN-ROW-2" {
+			slot_machine = slots.spin(slot_machine, false, true, false)
+		}
+		if button_type == "SPIN-ROW-3" {
+			slot_machine = slots.spin(slot_machine, false, false, true)
+		}
+	}
+
+	// Esc
+	if bool.and(i32.eq(key, 256), i32.eq(action, 1)) {
+		setScreen("SELECTION SCREEN")
+	}
+}
+
+func setScreen(screen str) () {
+	var new_screen graphical.Screen
+	if str.eq(screen, "MAIN SCREEN") {
+		new_screen = graphical.newScreen("MAIN SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("PLAY", 0.0, 0.0, 360, 130, false), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("ACCOUNT", 0.0, -0.25, 360, 130, false), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("EXIT", 0.0, -0.5, 360, 130, false), new_screen)
+
+		glfw.SetKeyCallback("window", "keyboardManagerMainScreen")
+	}
+
+	if str.eq(screen, "ACCOUNT SCREEN") {
+		new_screen = graphical.newScreen("ACCOUNT SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("AVATAR", -0.43, 0.2, 255, 255, false), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("DEPOSIT", -0.2, -0.65, 360, 130, false), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("WITHDRAW", 0.2, -0.65, 360, 130, false), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("RETURN", -0.95, -0.925, 50, 50, false), new_screen)
+
+		glfw.SetKeyCallback("window", "keyboardManagerAccountScreen")
+	}
+
+	if str.eq(screen, "DEPOSIT SCREEN") {
+		new_screen = graphical.newScreen("DEPOSIT SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("COPY-ADDRESS", 0.67, -0.73, 50, 50, false), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("RETURN", -0.95, -0.925, 50, 50, false), new_screen)
+
+		glfw.SetKeyCallback("window", "keyboardManagerDepositScreen")
+	}
+
+	if str.eq(screen, "WITHDRAW SCREEN") {
+		new_screen = graphical.newScreen("WITHDRAW SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("RETURN", -0.95, -0.925, 50, 50, false), new_screen)
+
+		glfw.SetKeyCallback("window", "keyboardManagerDepositScreen")
+	}
+
+	if str.eq(screen, "SELECTION SCREEN") {
+		new_screen = graphical.newScreen("SELECTION SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SLOTS-SELECTION", -0.5, 0.5, 960, 540, true), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("BLACKJACK-SELECTION", 0.5, 0.5, 960, 540, true), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("DICES-SELECTION", -0.5, -0.5, 960, 540, true), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("ROULETTE-SELECTION", 0.5, -0.5, 960, 540, true), new_screen)
+
+		glfw.SetKeyCallback("window", "keyboardManagerSelectionScreen")
+	}
+	if str.eq(screen, "SLOTS SCREEN") {
+		slot_machine = slots.newSlotMachine("SKYCOIN")
+
+		new_screen = graphical.newScreen("SLOTS SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ALL-ROWS", 0.85, -0.75, 350, 214, true), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-1", -0.475, -0.5, 400, 175, false), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-2",  0.0, -0.5, 400, 175, false), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-3",  0.475, -0.5, 400, 175, false), new_screen)
+
+		glfw.SetKeyCallback("window", "keyboardManagerSlotsScreen")
+	}
+	current_screen = new_screen
+}
+
+func main () {
+
+	initGlfw("window")
+	var program i32
+	program = initOpenGL()
+
+	var x f64
+  var y f64
+
+	setScreen("MAIN SCREEN")
+
+	for bool.not(glfw.ShouldClose("window")) && bool.not(EXIT_FLAG) {
+		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		gl.LoadIdentity()
+		gl.Enable(gl.TEXTURE_2D)
+		gl.Translatef(0.0, 0.0, 0.0)
+
+		/*drawBackground(CURRENT_MENU)
+
+		if str.eq(CURRENT_MENU, "MAIN MENU") {
+			graphical.renderButton(settings_button)
+			graphical.renderButton(play_button)
+			graphical.renderButton(exit_button)
+		}
+		if str.eq(CURRENT_MENU, "SELECT MENU") {
+			graphical.renderButton(select_skycoin_button)
+			graphical.renderButton(select_kittycash_button)
+			graphical.renderButton(select_sudo_button)
+			graphical.renderButton(select_skywire_button)
+		}
+		if str.eq(CURRENT_MENU, "PLAY MENU") {
+			slot_machine = slots.update(slot_machine)
+			slots.render(slot_machine)
+			graphical.renderButton(spin_all_rows_button)
+			graphical.renderButton(spin_row_1_button)
+			graphical.renderButton(spin_row_2_button)
+			graphical.renderButton(spin_row_3_button)
+		}*/
+
+		if str.eq(current_screen.name, "SLOTS SCREEN") {
+			slot_machine = slots.update(slot_machine)
+			slots.render(slot_machine)
+		}
+
+
+		x, y = glfw.GetCursorPos("window")
+    current_screen = graphical.updateButtonsState(f64.i32(x), f64.i32(y), current_screen)
+		graphical.renderScreen(current_screen)
+
+		glfw.PollEvents()
+		glfw.SwapBuffers("window")
+
+
+		// stop = bool.not(glfw.ShouldClose("window"))
+	}
+}

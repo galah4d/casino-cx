@@ -1,0 +1,440 @@
+package slots
+
+import "gl" //FIXME all needed?
+import "glfw"
+import "os"
+
+var SCREEN_WIDTH i32 = 1920
+var SCREEN_HEIGHT i32 = 1000
+
+/***************************************
+ * Declaration of structs.
+***************************************/
+
+type Slot struct {
+  id i32            // Indetifies the type of slot
+  x f32             // Verical position
+  y f32             // Horizontal position
+  width i32         // The slot's width
+  height i32        // The slot's height
+}
+
+type Row struct {
+  id i32            // Position of the row in the slot machine
+  base i32 // FIXME because fuck logic
+  spinning bool      // Indicates if the row is spinning
+  timer f64         // Spin timer
+  timer_limit f64   // How long should the row spin for
+  slots [9]Slot     // The slots in the row
+}
+
+type SlotMachine struct {
+  name str          // Name of the slot machine
+  spinning bool     // Indicates if there is any row spinning
+  timer f64         // FIXME stop machine once no more rows are spinning not based on a fixed timer
+  row_1 Row         // The left row
+  row_2 Row         // The middle row
+  row_3 Row         // The right row
+  texture i32       // Holds the slot machine texture
+  textures [9]i32   // Holds textures for the slots //FIXME should slots hold their own textures? Any benefit on this?
+}
+
+
+/***************************************
+ * Declaration of constructor functions.
+***************************************/
+
+/* Function     : newSlot
+   Input        : Identifier for the type of slot (_id i32)
+                : Original horizontal position (_x f32)
+                : Original vertical position (_y f32)
+   Output       : A slot (slot Slot)
+   Desctription : Constructor for the Slot struct.
+*/
+func newSlot(_id i32, _x f32, _y f32) (slot Slot) {
+  slot := Slot{
+    id: _id,
+    x: _x,
+    y: _y,
+    width: 150,     // FIXME add as global var in constants.cx
+    height: 108}    // FIXME add as global var in constants.cx
+}
+
+/* Function     : newRow
+   Input        : Identifier for the row's position in the slot machine (_id i32)
+   Output       : A slot machine's row (row Row)
+   Desctription : Constructor for the  Row struct.
+*/
+func newRow(_id i32) (row Row){
+  var _slots [9]Slot
+
+  /*
+  Initialize the row's slot calculating their positions based on the
+  row's id. The type of each slot is randomly initialized from within a valid
+  range (0-9) currently.
+  */
+  var x f32
+  var y f32
+  for i:=0; i<9; i++ {                                            // FIXME This spaghetti doesn't please me
+    x = f32.add(-0.475, f32.mul(0.475, i32.f32(i32.sub(_id, 1)))) // FIXME add as global var in constants.cx
+    y = f32.sub(1.6, f32.mul(i32.f32(i), 0.35))                   // FIXME add as global var in constants.cx
+    _slots[i] = newSlot(i32.rand(0,9), x, y)
+  }
+
+  // FIXME the row timer dynamically at the time of spin not now.
+  var _timer_limit f64
+  if _id == 1 {
+    _timer_limit = f32.f64(4.4)
+  }
+  if _id == 2 {
+    _timer_limit = f32.f64(6.0)
+  }
+  if _id == 3 {
+    _timer_limit = f32.f64(8.0)
+  }
+
+  // Row initialization.
+  row := Row{
+    id: _id,
+    base: 0,
+    spinning: false,
+    timer_limit: _timer_limit,
+    slots: _slots}
+}
+
+/* Function     : newSlotMachine
+   Input        : The slot machine's name used to identify what textures
+                  to load. (_id i32)
+   Output       : A slot machine (slot_machine SlotMachine)
+   Desctription : Constructor for the SlotMachine struct.
+*/
+func newSlotMachine(_name str) (slot_machine SlotMachine) {
+
+  var _texture i32
+  // Loads the slot machine's texture.
+  _texture = loadSlotMachineTexture(_name)
+
+
+  var _textures [9]i32
+  // Loads the textures for the slots.
+  _textures = loadSlotTextures(_name)
+
+  var _row_1 Row
+  // Initialize the left row
+  _row_1 = newRow(1) // FIXME can this be done during the machine's initialization?
+
+  var _row_2 Row
+  // Initialize the middle row
+  _row_2 = newRow(2) // FIXME can this be done during the machine's initialization?
+
+  var _row_3 Row
+  // Initialize the right row
+  _row_3 = newRow(3) // FIXME can this be done during the machine's initialization?
+
+  // Slot Machine initialization.
+  slot_machine := SlotMachine{
+    name: _name,
+    spinning: false,
+    row_1: _row_1,
+    row_2: _row_2,
+    row_3: _row_3,
+    texture: _texture,
+    textures: _textures}
+}
+
+
+/*******************************************
+ * Declaration of texture loading functions.
+*******************************************/
+
+/* Function     : loadSlotMachineTexture
+   Input        : The slot machine's name used to identify what textures
+                  to load. (_id i32)
+   Output       : The slot machine's texture (texture i32)
+   Desctription : Loads the slot machine's texture.
+*/
+func loadSlotMachineTexture(name str) (texture i32) {
+  var wd str
+	wd = os.GetWorkingDirectory()
+
+  if name == "SKYCOIN" {
+      texture := gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/slot-machine.png"))
+  }
+}
+
+/* Function     : loadSlotTextures
+   Input        : The slot machine's name used to identify what textures
+                  to load. (_id i32)
+   Output       : An array containing the textures for the slots (textures [9]i32)
+   Desctription : Loads the textures for the slot machine's slots.
+*/
+func loadSlotTextures(name str) (textures [9]i32) {
+  var wd str
+	wd = os.GetWorkingDirectory()
+
+  var textures [9]i32
+  if name == "SKYCOIN" {
+    textures[0] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/skycoin.png"))
+    textures[1] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/obelisk.png"))
+    textures[2] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/coin-hours.png"))
+    textures[3] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/cx.png"))
+    textures[4] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/fiber.png"))
+    textures[5] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/nodes.png"))
+    textures[6] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/skyminer.png"))
+    textures[7] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/skycoin.png"))
+    textures[8] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/cx.png"))
+  }
+}
+
+
+/*******************************************
+ * Declaration of functions responsible for
+ * managing the game's logic.
+*******************************************/
+
+/* Function     : spin
+   Input        : The slot machine whose rows should be spinned (slot_machine SlotMachine)
+                : Controls if the left row should spin   (_row_1 bool)
+                : Controls if the middle row should spin (_row_2 bool)
+                : Controls if the right row should spin  (_row_3 bool)
+   Output       : A spinning slot machine (slot_machine SlotMachine)
+   Desctription : The function responsible for starting the game. // FIXME bad description too lazy...
+*/
+func spin(slot_machine SlotMachine, _row_1 bool, _row_2 bool, _row_3 bool) (slot_machine SlotMachine) {
+  // Avoids conflicts with timers by checking is the machine is already spinning.
+  if bool.not(slot_machine.spinning) {
+    if bool.eq(_row_1, true) {
+      slot_machine.row_1 = spinRow(slot_machine.row_1)
+    }
+    if bool.eq(_row_2, true) {
+      slot_machine.row_2 = spinRow(slot_machine.row_2)
+    }
+    if bool.eq(_row_3, true) {
+      slot_machine.row_3 = spinRow(slot_machine.row_3)
+    }
+    slot_machine.timer = glfw.GetTime() // FIXME remove this timer, see previous note regarding this topic
+  }
+  slot_machine.spinning = true
+}
+
+/* Function     : spinRow
+   Input        : The row to spin (row Row)
+   Output       : A spinning row (row Row)
+   Desctription : Makes a row start spinning and randomly generates the final
+                  outcome of the spin.
+*/
+func spinRow(row Row) (row Row) {
+  row.base = i32.rand(0, 9)      // The outcome of the spin.
+  row.spinning = true
+  row.timer = glfw.GetTime()    // Starts the row spin timer.
+}
+
+//FIXME implement
+func checkResults(slot_machine SlotMachine) (winnigs i32) {
+  var winnigs i32 = 0
+}
+
+/* Function     : update
+   Input        : The slot machine to update (slot_machine SlotMachine)
+   Output       : An updated slot machine (slot_machine SlotMachine)
+   Desctription : Updates the state of the input slot machine by stoping
+                  spinning rows if their timers are over or by moving the
+                  corresponding slots if they are not.
+*/
+func update(slot_machine SlotMachine) (slot_machine SlotMachine) {
+  if slot_machine.spinning {
+    if gteq(f64.sub(glfw.GetTime(), slot_machine.timer), f32.f64(10.0)) {
+      slot_machine.spinning = false
+    } else {
+      slot_machine.row_1 = spinRowAnimation(slot_machine.row_1, "DOWN")
+      slot_machine.row_2 = spinRowAnimation(slot_machine.row_2, "DOWN")
+      slot_machine.row_3 = spinRowAnimation(slot_machine.row_3, "DOWN")
+    }
+  }
+}
+
+/*********************************************
+ * Declaration of animation related functions.
+*********************************************/
+// FIXME addd comments
+func spinRowAnimation(row Row, direction str) (row Row) {
+  var slots [9]Slot
+  slots = row.slots
+
+  if bool.eq(row.spinning, true) {
+    for i:=0; i<9; i++ {
+      if direction == "UP" {
+        slots[i] = spinUpAnimation(slots[i])
+      }
+      if direction == "DOWN" {
+        slots[i] = spinDownAnimation(slots[i])
+      }
+    }
+  }
+
+  var slot Slot
+  if gteq(f64.sub(glfw.GetTime(), row.timer), row.timer_limit) {
+    slot = slots[row.base]
+    if f32.eq(slot.y, 1.95) {
+      row.spinning = false
+    }
+  }
+
+  row.slots = slots
+}
+
+func spinUpAnimation(slot Slot) (slot Slot) {
+  slot.y = f32.add(slot.y, 0.025)
+  if slot.y >= 1.95 {
+    slot.y = -1.2
+  }
+}
+
+func spinDownAnimation(slot Slot) (slot Slot) {
+  slot.y = f32.sub(slot.y, 0.025)
+  if slot.y <= -1.2 {
+    slot.y = 1.95
+  }
+}
+
+
+/*************************************
+ * Declaration of rendering functions.
+**************************************/
+
+/* Function     : render
+   Input        : The slot machine to render (row Row)
+   Output       : A spinning row (row Row)
+   Desctription : Renders a slot machine.
+*/
+func render(slot_machine SlotMachine) (slot_machine SlotMachine) {
+  // Renders each row as well as corresponding slots.
+  renderRow(slot_machine.row_1, slot_machine.textures)
+  renderRow(slot_machine.row_2, slot_machine.textures)
+  renderRow(slot_machine.row_3, slot_machine.textures)
+
+  // Renders the actual slot machine.
+  gl.LoadIdentity()
+  gl.BindTexture(gl.TEXTURE_2D, slot_machine.texture)
+  gl.Scalef(1.0, 1.0, 0.0)
+  gl.Begin(gl.QUADS)
+  gl.TexCoord2d(0.0D, 0.0D);
+  gl.Vertex3f(-1.0, 1.0, 0.0);
+  gl.TexCoord2d(1.0D, 0.0D);
+  gl.Vertex3f(1.0, 1.0, 0.0);
+  gl.TexCoord2d(1.0D, 1.0D);
+  gl.Vertex3f(1.0, -1.0, 0.0);
+  gl.TexCoord2d(0.0D, 1.0D);
+  gl.Vertex3f(-1.0, -1.0, 0.0);
+  gl.End();
+}
+
+/* Function     : renderRow
+   Input        : The row to render (row Row)
+                : The textures of the slots contained in the row (textures [9]i32)
+   Desctription : Renders a slot machine's row.
+*/
+func renderRow(row Row, textures [9]i32) () {
+  var slots [9]Slot
+  slots = row.slots
+  /*
+  Renders all the slots contained in the row starting by the slot which is
+  currently on at the row's base.
+  */
+  for i:=0; i<9; i++ {
+    // Simulates a circuçar buffer to avoid an overflow.
+    if i32.lt(i32.add(row.base, i), 9) {
+      renderSlot(slots[i32.add(row.base, i)], textures)
+    } else {
+      renderSlot(slots[i32.sub(i32.add(row.base, i), 9)], textures)
+    }
+
+  }
+}
+
+/* Function     : renderSlot
+   Input        : The slot to render (slot Slot)
+                : The textures of the slots contained in the row (textures [9]i32)
+   Desctription : Renders a row's slot.
+*/
+func renderSlot(slot Slot, textures [9]i32) () {
+  var width f32
+  var height f32
+
+  gl.LoadIdentity()
+  gl.BindTexture(gl.TEXTURE_2D, textures[slot.id])
+
+  width = scale(slot.width, SCREEN_WIDTH)
+  height = scale(slot.height, SCREEN_HEIGHT)
+
+	gl.Scalef(width, height, 0.0)
+
+  // FIXME need to sleep comment and fix this spaghetti tomorrow
+  gl.Translatef(f32.mul(slot.x, scale(SCREEN_WIDTH, slot.width)), f32.mul(slot.y, scale(SCREEN_HEIGHT, slot.height)), 0.0)
+
+	gl.Begin(gl.QUADS)
+	gl.TexCoord2d(0.0D, 0.0D);
+	gl.Vertex3f(-1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 0.0D);
+	gl.Vertex3f(1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 1.0D);
+	gl.Vertex3f(1.0, -1.0, 0.0);
+	gl.TexCoord2d(0.0D, 1.0D);
+	gl.Vertex3f(-1.0, -1.0, 0.0);
+	gl.End();
+}
+
+func scale(value i32, max i32) (scaled f32) {
+	scaled = f32.div(i32.f32(value), i32.f32(max))
+}
+
+func main()  {
+  glfw.Init()
+  glfw.WindowHint(glfw.Resizable, glfw.False)
+  glfw.WindowHint(glfw.ContextVersionMajor, 2)
+  glfw.WindowHint(glfw.ContextVersionMinor, 1)
+
+  glfw.CreateWindow("window", SCREEN_WIDTH, SCREEN_HEIGHT, "Skycoin Slots")
+  glfw.MakeContextCurrent("window")
+
+  gl.Init()
+  gl.Enable(gl.BLEND)
+  gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+  var program i32
+  program = gl.CreateProgram()
+
+  gl.LinkProgram(program)
+
+  var slot_machine SlotMachine
+  slot_machine = newSlotMachine("SKYCOIN")
+
+  var row Row
+
+  i32.print(row.id)
+
+  var slots [9]Slot
+  var slot Slot
+
+
+  for bool.not(glfw.ShouldClose("window")) {
+    gl.ClearColor(0.0, 0.0, 0.0, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		gl.LoadIdentity()
+		gl.Enable(gl.TEXTURE_2D)
+		gl.Translatef(0.0, 0.0, 0.0)
+
+    slot_machine = render(slot_machine)
+
+    row = slot_machine.row_1
+    slots = row.slots
+    for i:=0; i<9; i++ {
+      slot = slots[i]
+      f32.print(slot.x)
+    }
+
+    glfw.PollEvents()
+		glfw.SwapBuffers("window")
+  }
+}

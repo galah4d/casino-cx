@@ -1,0 +1,492 @@
+package graphical
+
+import "gl"
+import "glfw"
+import "gltext"
+import "os"
+
+var SCREEN_WIDTH i32 = 1920
+var SCREEN_HEIGHT i32 = 1000
+
+/***************************************
+ * Declaration of structs.
+***************************************/
+
+type Image struct {
+  x f32
+  y f32
+  width i32
+  height i32
+  texture i32
+}
+
+type Button struct {
+  name str
+  x f32
+  y f32
+  width i32
+  height i32
+  active bool
+  active_texture i32
+  inactive_texture i32
+}
+
+type Textbox struct {
+  x f32
+  y f32
+  text str
+  font str
+}
+
+type Spinner struct {
+  name str
+  x f32
+  y f32
+  width i32
+  height i32
+  texture i32
+  up_button Button
+  down_button Button
+  textbox Textbox
+}
+
+type Screen struct {
+  name str
+  width i32
+  height i32
+  has_background bool
+  background i32
+  image_count i32       // FIXME remove once len(array<struct>) is implemented
+  images [10]Image      // FIXME remove limit once slices are working
+  button_count i32      // FIXME remove once len(array<struct>) is implemented
+  buttons [10]Button    // FIXME remove limit once slices are working
+  textbox_count i32     // FIXME remove once len(array<struct>) is implemented
+  textboxes [10]Textbox // FIXME remove limit once slices are working
+}
+
+/***************************************
+ * Declaration of constructor functions.
+***************************************/
+
+/* Function     : newButton
+   Input        : Identifies the type of button (_name str)
+                : Original horizontal position relative to the parent screen (_x f32)
+                : Original vertical position relative to the parent screen (_y f32)
+                : Width in pixels (_width i32)
+                : Height in pixels (_height i32)
+                : Identifies if the button is currently selected (_active bool)
+   Output       : A button (button Button)
+   Desctription : Constructor for the Button struct.
+*/
+func newButton(_name str, _x f32, _y f32, _width i32, _height i32, _active bool) (button Button) {
+  var _active_texture i32
+  var _inactive_texture i32
+  _active_texture, _inactive_texture = loadButtonTextures(_name)
+
+  button := Button{
+    name: _name,
+    x: _x,
+    y: _y,
+    width: _width,
+    height: _height,
+    active: _active,
+    active_texture: _active_texture,
+    inactive_texture: _inactive_texture}
+}
+
+/* Function     : newImage
+   Input        : Identifies the type of image (_name str)
+                : Original horizontal position relative to the parent screen (_x f32)
+                : Original vertical position relative to the parent screen (_y f32)
+                : Width in pixels (_width i32)
+                : Height in pixels (_height i32)
+   Output       : An image (image Image)
+   Desctription : Constructor for the Button struct.
+*/
+func newImage(_name str, _x f32, _y f32, _width i32, _height i32) (image Image) {
+  var _texture i32
+  _texture = loadImageTexture(_name)
+
+  image := Image{
+    x: _x,
+    y: _y,
+    width: _width,
+    height: _height,
+    texture: _texture}
+}
+
+/* Function     : newTextbox
+   Input        : Original horizontal position relative to the parent screen (_x f32)
+                : Original vertical position relative to the parent screen (_y f32)
+                : The actual text (_text str)
+                : The text's font (_font str)
+   Output       : A Textbox (textbox Textbox)
+   Desctription : Constructor for the Textbox struct.
+*/
+func newTextbox(_x f32, _y f32, _text str, _font str) (textbox Textbox) {
+  textbox := Textbox{
+    x: _x,
+    y: _y,
+    text: _text,
+    font: _font}
+}
+
+/* FIXME implement
+func newSpinner(_name str, _x f32, _y f32, _width i32, _height i32) (spinner Spinner){
+  var _texture i32
+  _texture = getSpinnerTexture(_name)
+
+  var _up_button Button
+  _up_button = newButton()
+}*/
+
+/* Function     : newScreen
+   Input        : Identifier for the screen (_name str)
+                : Width of the screen in pixels (_width i32)
+                : Height of the screen in pixels (_height i32)
+   Output       : A screen (image Image)
+   Desctription : Constructor for the Screen struct.
+*/
+func newScreen(_name str, _width i32, _height i32) (screen Screen) {
+  var _has_background bool
+  var _background i32
+  _has_background, _background = loadScreenBackground(_name) // FIXME implement this
+
+  screen := Screen{
+    name: _name,
+    width: _width,
+    height: _height,
+    has_background: _has_background,
+    background: _background,
+    button_count: 0,
+    image_count: 0,
+    textbox_count: 0}
+}
+
+
+/*********************************************
+ * Declaration of screen management functions.
+*********************************************/
+
+func addButtonToScreen(button Button, screen Screen) (screen Screen) {
+  var buttons [10]Button
+  i32.print(len(buttons))
+  buttons = screen.buttons
+
+  buttons[screen.button_count] = button
+  screen.buttons = buttons
+  screen.button_count = i32.add(screen.button_count, 1)
+}
+
+func addImageToScreen(image Image, screen Screen) (screen Screen) {
+  var images [10]Image
+  images = screen.images
+
+  images[screen.image_count] = image
+  screen.images = images
+  screen.image_count = i32.add(screen.image_count, 1)
+}
+
+func addTextboxToScreen(textbox Textbox, screen Screen) (screen Screen) {
+  var textboxes [10]Textbox
+  textboxes = screen.textboxes
+
+  textboxes[screen.textbox_count] = textbox
+  screen.textboxes = textboxes
+  screen.textbox_count = i32.add(screen.textbox_count, 1)
+}
+
+func updateButtonsState(cursor_x i32, cursor_y i32, screen Screen) (screen Screen) {
+  var buttons [10]Button
+  buttons = screen.buttons
+
+  var button Button
+  for i:=0; i<screen.button_count; i++ {
+    button = buttons[i]
+    if positionInsideButton(cursor_x, cursor_y, button) {
+      button.active = true
+    } else {
+      button.active = false
+    }
+    buttons[i] = button
+  }
+  screen.buttons = buttons
+}
+
+func getActiveButton(screen Screen) (button_type str) {
+  var buttons [10]Button
+  buttons = screen.buttons
+
+  var button_type str
+  button_type = "NONE" // FIXME add bool to return params
+
+  var button Button
+  for i:=0; i<screen.button_count; i++ {
+    button = buttons[i]
+      if button.active {
+        button_type = button.name
+      }
+  }
+}
+
+func positionInsideButton(x i32, y i32, button Button) (inside bool) {
+  var inside bool = false
+  if i32.gteq(x, i32.sub(relative2absoluteX(button.x, SCREEN_WIDTH), i32.div(button.width, 2))) {
+    if i32.lteq(x, i32.add(relative2absoluteX(button.x, SCREEN_WIDTH), i32.div(button.width, 2))) {
+      if i32.gteq(y, i32.sub(relative2absoluteY(button.y, SCREEN_HEIGHT), i32.div(button.height, 2))) {
+        if i32.lteq(y, i32.add(relative2absoluteY(button.y, SCREEN_HEIGHT), i32.div(button.height, 2))) {
+          inside = true  // FIXME I won't allow this shit tier code...
+        }
+      }
+    }
+  }
+}
+
+
+/*******************************************
+ * Declaration of texture loading functions.
+*******************************************/
+
+/* Function     : loadButtonTextures
+   Input        : Identifier for the type of button (button_name) str)
+   Output       : The button's active texture (active_texture i32)
+                : The button's inactive texture (inactive_texture i32)
+   Desctription : Loads the button's textures.
+*/
+func loadButtonTextures(button_name str) (active_texture i32, inactive_texture i32) {
+  var active_texture i32
+  var inactive_texture i32
+
+  var wd str
+	wd = os.GetWorkingDirectory()
+
+  active_texture = gl.NewTexture(sprintf("%stextures/buttons/%s-button-active.png", wd, button_name))
+  inactive_texture = gl.NewTexture(sprintf("%stextures/buttons/%s-button-inactive.png", wd, button_name))
+}
+
+/* Function     : loadImageTexture
+   Input        : Identifier for the type of image (image_name) str)
+   Output       : The image's texture (texture i32)
+   Desctription : Loads the image's textures.
+*/
+func loadImageTexture(image_name str) (texture i32) {
+  var wd str
+	wd = os.GetWorkingDirectory()
+  texture := gl.NewTexture(sprintf("%s%s", wd, "textures/buttons/SPIN-ROW-1-button-inactive.png"))
+}
+
+/* Function     : loadScreenBackground
+   Input        : Identifier for the type of screen (screen_name) str)
+   Output       : The screen's background texture (texture i32)
+   Desctription : Loads the background texture for the input screen.
+*/
+func loadScreenBackground(screen_name str) (has_background bool, texture i32) {
+  var wd str
+	wd = os.GetWorkingDirectory()
+
+  var has_background bool = false
+  if (screen_name == "MAIN SCREEN") {
+    has_background = true
+    texture := gl.NewTexture(sprintf("%s%s", wd, "textures/main-menu-background.jpg"))
+  }
+  if (screen_name == "ACCOUNT SCREEN") {
+    has_background = true
+    texture := gl.NewTexture(sprintf("%s%s", wd, "textures/profile-screen.jpg"))
+  }
+  if (screen_name == "DEPOSIT SCREEN") {
+    has_background = true
+    texture := gl.NewTexture(sprintf("%s%s", wd, "textures/deposit-screen.jpg"))
+  }
+  if (screen_name == "WITHDRAW SCREEN") {
+    has_background = true
+    texture := gl.NewTexture(sprintf("%s%s", wd, "textures/withdraw-screen.jpg"))
+  }
+}
+
+/*************************************
+ * Declaration of rendering functions.
+**************************************/
+
+func renderScreen(screen Screen) () {
+  if screen.has_background {
+    gl.LoadIdentity()
+    gl.BindTexture(gl.TEXTURE_2D, screen.background)
+    gl.Scalef(1.0, 1.0, 0.0)
+    gl.Begin(gl.QUADS)
+    gl.TexCoord2d(0.0D, 0.0D)
+    gl.Vertex3f(-1.0, 1.0, 0.0)
+    gl.TexCoord2d(1.0D, 0.0D)
+    gl.Vertex3f(1.0, 1.0, 0.0)
+    gl.TexCoord2d(1.0D, 1.0D)
+    gl.Vertex3f(1.0, -1.0, 0.0)
+    gl.TexCoord2d(0.0D, 1.0D)
+    gl.Vertex3f(-1.0, -1.0, 0.0)
+    gl.End()
+  }
+
+  var buttons [10]Button
+  buttons = screen.buttons
+  for i:=0; i<screen.button_count; i++ {
+    renderButton(buttons[i], screen)
+  }
+
+  var images [10]Image
+  images = screen.images
+  for j:=0; j<screen.image_count; j++ {
+    renderImage(images[j], screen)
+  }
+
+  var textboxes [10]Textbox
+  textboxes = screen.textboxes
+  for z:=0; z<screen.textbox_count; z++ {
+    renderTextbox(textboxes[z], screen)
+  }
+}
+
+/* Function     : renderButton
+   Input        : The button to render (button Button)
+                : The button's parent screen (screen Screen)
+   Desctription : Renders a button.
+*/
+func renderButton(button Button, screen Screen) () {
+  gl.LoadIdentity()
+
+  if button.active {
+    gl.BindTexture(gl.TEXTURE_2D, button.active_texture)
+  } else {
+    gl.BindTexture(gl.TEXTURE_2D, button.inactive_texture)
+  }
+
+  gl.Translatef(button.x, button.y, 0.0)
+  gl.Scalef(scale(button.width, screen.width), scale(button.height, screen.height), 0.0)
+
+	gl.Begin(gl.QUADS)
+	gl.TexCoord2d(0.0D, 0.0D);
+	gl.Vertex3f(-1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 0.0D);
+	gl.Vertex3f(1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 1.0D);
+	gl.Vertex3f(1.0, -1.0, 0.0);
+	gl.TexCoord2d(0.0D, 1.0D);
+	gl.Vertex3f(-1.0, -1.0, 0.0);
+	gl.End();
+}
+
+/* Function     : renderImage
+   Input        : The image to render (image Image)
+                : The image's parent screen (screen Screen)
+   Desctription : Renders an image.
+*/
+func renderImage(image Image, screen Screen) () {
+  gl.LoadIdentity()
+  gl.BindTexture(gl.TEXTURE_2D, image.texture)
+
+  gl.Translatef(image.x, image.y, 0.0)
+  gl.Scalef(scale(image.width, screen.width), scale(image.height, screen.height), 0.0)
+
+	gl.Begin(gl.QUADS)
+	gl.TexCoord2d(0.0D, 0.0D);
+	gl.Vertex3f(-1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 0.0D);
+	gl.Vertex3f(1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 1.0D);
+	gl.Vertex3f(1.0, -1.0, 0.0);
+	gl.TexCoord2d(0.0D, 1.0D);
+	gl.Vertex3f(-1.0, -1.0, 0.0);
+	gl.End();
+}
+
+/* Function     : renderTextbox
+   Input        : The textbox to render (textbox Textbox)
+                : The textboxes' parent screen (screen Screen)
+   Desctription : Renders a textbox.
+*/
+func renderTextbox(textbox Textbox, screen Screen) () { // FIXME position
+  gl.LoadIdentity()
+  gl.Color4f(0.5, 0.3, 0.8, 1.0)        // FIXME add custom colors
+  gltext.Printf(textbox.font, textbox.x, textbox.y, textbox.text)
+}
+
+func scale(value i32, max i32) (scaled f32) {
+	scaled = f32.div(i32.f32(value), i32.f32(max))
+}
+
+func relative2absoluteX(relative_position f32, max_px i32) (absolute_position i32) {
+  var absolute_position i32
+  absolute_position = f32.i32(f32.div(i32.f32(max_px), 2.0) + f32.mul(relative_position, f32.div(i32.f32(max_px), 2.0)))
+}
+
+func relative2absoluteY(relative_position f32, max_px i32) (absolute_position i32) {
+  var absolute_position i32
+  absolute_position = f32.i32(f32.div(i32.f32(max_px), 2.0) - f32.mul(relative_position, f32.div(i32.f32(max_px), 2.0)))
+}
+
+func mouseButton (window str, key i32, action i32, mods i32) () {
+  var x i32
+  var y i32
+
+	x, y = glfw.GetCursorPos("window")
+	str.print("mouse cursor at:")
+	i32.print(x)
+	i32.print(y)
+}
+
+func main()  {
+  glfw.Init()
+  glfw.WindowHint(glfw.Resizable, glfw.False)
+  glfw.WindowHint(glfw.ContextVersionMajor, 2)
+  glfw.WindowHint(glfw.ContextVersionMinor, 1)
+
+  glfw.CreateWindow("window", SCREEN_WIDTH, SCREEN_HEIGHT, "Skycoin Slots")
+  glfw.MakeContextCurrent("window")
+
+  gl.Init()
+  gl.Enable(gl.BLEND)
+  gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+  var program i32
+  program = gl.CreateProgram()
+  gl.LinkProgram(program)
+
+  var x f64
+  var y f64
+
+  var wd str
+	wd = os.GetWorkingDirectory()
+	fontFile := str.concat(wd, "fonts/8Bit/8-BIT WONDER.TTF")
+
+  glfw.SetMouseButtonCallback("window", "mouseButton")
+
+	os.Open(fontFile)
+	gltext.LoadTrueType("8Bit100", fontFile, 100, 32, 127, gltext.LeftToRight)
+  os.Close(fontFile)
+
+  var screen Screen
+  screen = newScreen("MAIN SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
+
+  screen = addButtonToScreen(newButton("PLAY", 0.0, 0.0, 360, 130, false), screen)
+  screen = addButtonToScreen(newButton("PLAY", 0.0, -0.33, 360, 130, false), screen)
+  screen = addButtonToScreen(newButton("PLAY", 0.0, -0.66, 360, 130, false), screen)
+  //screen = addImageToScreen(newImage("DEMO", 0.5, 0.5, 200, 200), screen)
+  //screen = addTextboxToScreen(newTextbox(0.5, 0.5, "Skycoin Slots", "8Bit100"), screen)
+
+  for bool.not(glfw.ShouldClose("window")) {
+    gl.ClearColor(0.0, 0.0, 0.0, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		gl.LoadIdentity()
+		gl.Enable(gl.TEXTURE_2D)
+		gl.Translatef(0.0, 0.0, 0.0)
+
+    x, y = glfw.GetCursorPos("window")
+  	//str.print("mouse cursor at:")
+  	//i32.print(f64.i32(x))
+  	//i32.print(f64.i32(y))
+
+    screen = updateButtonsState(f64.i32(x), f64.i32(y), screen)
+    renderScreen(screen)
+
+    glfw.PollEvents()
+		glfw.SwapBuffers("window")
+  }
+}
