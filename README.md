@@ -1,5 +1,7 @@
 # Casino CX - Version 0.1
 
+![pacman cx](https://github.com/galah4d/casino-cx/blob/master/screenshots/main-screen.png)
+
 Casino CX is a CX application featuring multiple popular casino games such as:
 
   - Slots (Under development)
