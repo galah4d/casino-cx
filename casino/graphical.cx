@@ -287,7 +287,7 @@ func loadScreenBackground(screen_name str) (has_background bool, texture i32) {
   var has_background bool = false
   if (screen_name == "MAIN SCREEN") {
     has_background = true
-    texture := gl.NewTexture(sprintf("%s%s", wd, "textures/main-menu-background.jpg"))
+    texture := gl.NewTexture(sprintf("%s%s", wd, "textures/main-screen.png")) // FIXME export as jpg
   }
   if (screen_name == "ACCOUNT SCREEN") {
     has_background = true
