@@ -223,9 +223,9 @@ func getActiveButton(screen Screen) (button_type str) {
   var button Button
   for i:=0; i<screen.button_count; i++ {
     button = buttons[i]
-      if button.active {
-        button_type = button.name
-      }
+    if button.active {
+      button_type = button.name
+    }
   }
 }
 
