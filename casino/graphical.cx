@@ -57,11 +57,11 @@ type Screen struct {
   has_background bool
   background i32
   image_count i32       // FIXME remove once len(array<struct>) is implemented
-  images [10]Image      // FIXME remove limit once slices are working
+  images [20]Image      // FIXME remove limit once slices are working
   button_count i32      // FIXME remove once len(array<struct>) is implemented
-  buttons [10]Button    // FIXME remove limit once slices are working
+  buttons [20]Button    // FIXME remove limit once slices are working
   textbox_count i32     // FIXME remove once len(array<struct>) is implemented
-  textboxes [10]Textbox // FIXME remove limit once slices are working
+  textboxes [20]Textbox // FIXME remove limit once slices are working
 }
 
 /***************************************
@@ -131,15 +131,6 @@ func newTextbox(_x f32, _y f32, _text str, _font str) (textbox Textbox) {
     font: _font}
 }
 
-/* FIXME implement
-func newSpinner(_name str, _x f32, _y f32, _width i32, _height i32) (spinner Spinner){
-  var _texture i32
-  _texture = getSpinnerTexture(_name)
-
-  var _up_button Button
-  _up_button = newButton()
-}*/
-
 /* Function     : newScreen
    Input        : Identifier for the screen (_name str)
                 : Width of the screen in pixels (_width i32)
@@ -169,8 +160,7 @@ func newScreen(_name str, _width i32, _height i32) (screen Screen) {
 *********************************************/
 
 func addButtonToScreen(button Button, screen Screen) (screen Screen) {
-  var buttons [10]Button
-  i32.print(len(buttons))
+  var buttons [20]Button
   buttons = screen.buttons
 
   buttons[screen.button_count] = button
@@ -179,7 +169,7 @@ func addButtonToScreen(button Button, screen Screen) (screen Screen) {
 }
 
 func addImageToScreen(image Image, screen Screen) (screen Screen) {
-  var images [10]Image
+  var images [20]Image
   images = screen.images
 
   images[screen.image_count] = image
@@ -188,7 +178,7 @@ func addImageToScreen(image Image, screen Screen) (screen Screen) {
 }
 
 func addTextboxToScreen(textbox Textbox, screen Screen) (screen Screen) {
-  var textboxes [10]Textbox
+  var textboxes [20]Textbox
   textboxes = screen.textboxes
 
   textboxes[screen.textbox_count] = textbox
@@ -197,7 +187,7 @@ func addTextboxToScreen(textbox Textbox, screen Screen) (screen Screen) {
 }
 
 func updateButtonsState(cursor_x i32, cursor_y i32, screen Screen) (screen Screen) {
-  var buttons [10]Button
+  var buttons [20]Button
   buttons = screen.buttons
 
   var button Button
@@ -214,7 +204,7 @@ func updateButtonsState(cursor_x i32, cursor_y i32, screen Screen) (screen Scree
 }
 
 func getActiveButton(screen Screen) (button_type str) {
-  var buttons [10]Button
+  var buttons [20]Button
   buttons = screen.buttons
 
   var button_type str
@@ -289,6 +279,10 @@ func loadScreenBackground(screen_name str) (has_background bool, texture i32) {
     has_background = true
     texture := gl.NewTexture(sprintf("%s%s", wd, "textures/main-screen.png")) // FIXME export as jpg
   }
+  if (screen_name == "SELECTION SCREEN") {
+    has_background = true
+    texture := gl.NewTexture(sprintf("%s%s", wd, "textures/selection-screen.jpg")) // FIXME export as jpg
+  }
   if (screen_name == "ACCOUNT SCREEN") {
     has_background = true
     texture := gl.NewTexture(sprintf("%s%s", wd, "textures/profile-screen.jpg"))
@@ -324,19 +318,19 @@ func renderScreen(screen Screen) () {
     gl.End()
   }
 
-  var buttons [10]Button
+  var buttons [20]Button
   buttons = screen.buttons
   for i:=0; i<screen.button_count; i++ {
     renderButton(buttons[i], screen)
   }
 
-  var images [10]Image
+  var images [20]Image
   images = screen.images
   for j:=0; j<screen.image_count; j++ {
     renderImage(images[j], screen)
   }
 
-  var textboxes [10]Textbox
+  var textboxes [20]Textbox
   textboxes = screen.textboxes
   for z:=0; z<screen.textbox_count; z++ {
     renderTextbox(textboxes[z], screen)
@@ -401,10 +395,13 @@ func renderImage(image Image, screen Screen) () {
                 : The textboxes' parent screen (screen Screen)
    Desctription : Renders a textbox.
 */
-func renderTextbox(textbox Textbox, screen Screen) () { // FIXME position
+func renderTextbox(textbox Textbox, screen Screen) () { // FIXME color overlay
   gl.LoadIdentity()
-  gl.Color4f(0.5, 0.3, 0.8, 1.0)        // FIXME add custom colors
-  gltext.Printf(textbox.font, textbox.x, textbox.y, textbox.text)
+  gl.Color3f(0.98, 0.98, 0.98)        // FIXME add custom colors
+
+  x := i32.f32(relative2absoluteX(textbox.x, SCREEN_WIDTH))
+  y := i32.f32(relative2absoluteY(textbox.y, SCREEN_HEIGHT))
+  gltext.Printf(textbox.font, x, y, textbox.text)
 }
 
 func scale(value i32, max i32) (scaled f32) {
@@ -458,7 +455,7 @@ func main()  {
   glfw.SetMouseButtonCallback("window", "mouseButton")
 
 	os.Open(fontFile)
-	gltext.LoadTrueType("8Bit100", fontFile, 100, 32, 127, gltext.LeftToRight)
+	gltext.LoadTrueType("8Bit100", fontFile, 100, 32, 127, gltext.RightToLeft)
   os.Close(fontFile)
 
   var screen Screen

@@ -2,6 +2,7 @@ package main
 
 import "gl"
 import "glfw"
+import "gltext"
 import "os"
 
 import "graphical"
@@ -101,16 +102,17 @@ func keyboardManagerSelectionScreen(window str, key i32, scancode i32, action i3
 		if button_type == "SLOTS-SELECTION" {
 			setScreen("SLOTS SCREEN")
 		}
-	}
-
-	// Esc
-	if bool.and(i32.eq(key, 256), i32.eq(action, 1)) {
-		setScreen("MAIN SCREEN")
+		if button_type == "RETURN" {
+			setScreen("MAIN SCREEN")
+		}
 	}
 }
 
 func keyboardManagerSlotsScreen(window str, key i32, scancode i32, action i32, mods i32) {
 	var button_type str
+	var textbox graphical.Textbox
+	var textboxes[20] graphical.Textbox
+
 	// Enter
 	if bool.and(i32.eq(key, 257), i32.eq(action, 1)) {
 		button_type = graphical.getActiveButton(current_screen)
@@ -126,11 +128,23 @@ func keyboardManagerSlotsScreen(window str, key i32, scancode i32, action i32, m
 		if button_type == "SPIN-ROW-3" {
 			slot_machine = slots.spin(slot_machine, false, false, true)
 		}
-	}
-
-	// Esc
-	if bool.and(i32.eq(key, 256), i32.eq(action, 1)) {
-		setScreen("SELECTION SCREEN")
+		if button_type == "MINUS" {
+			textboxes = current_screen.textboxes
+			textbox = textboxes[0]
+			textbox.text = i32.str(i32.sub(str.i32(textbox.text), 1))
+			textboxes[0] = textbox
+			current_screen.textboxes = textboxes
+		}
+		if button_type == "PLUS" {
+			textboxes = current_screen.textboxes
+			textbox = textboxes[0]
+			textbox.text = i32.str(i32.add(str.i32(textbox.text), 1))
+			textboxes[0] = textbox
+			current_screen.textboxes = textboxes
+		}
+		if button_type == "RETURN" {
+			setScreen("SELECTION SCREEN")
+		}
 	}
 }
 
@@ -172,10 +186,12 @@ func setScreen(screen str) () {
 
 	if str.eq(screen, "SELECTION SCREEN") {
 		new_screen = graphical.newScreen("SELECTION SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
-		new_screen = graphical.addButtonToScreen(graphical.newButton("SLOTS-SELECTION", -0.5, 0.5, 960, 540, true), new_screen)
-		new_screen = graphical.addButtonToScreen(graphical.newButton("BLACKJACK-SELECTION", 0.5, 0.5, 960, 540, true), new_screen)
-		new_screen = graphical.addButtonToScreen(graphical.newButton("DICES-SELECTION", -0.5, -0.5, 960, 540, true), new_screen)
-		new_screen = graphical.addButtonToScreen(graphical.newButton("ROULETTE-SELECTION", 0.5, -0.5, 960, 540, true), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SLOTS-SELECTION", -0.43, 0.21, 758, 313, true), new_screen)
+		//new_screen = graphical.addButtonToScreen(graphical.newButton("BLACKJACK-SELECTION", 0.5, 0.5, 960, 540, true), new_screen)
+		//new_screen = graphical.addButtonToScreen(graphical.newButton("DICES-SELECTION", -0.5, -0.5, 960, 540, true), new_screen)
+		//new_screen = graphical.addButtonToScreen(graphical.newButton("ROULETTE-SELECTION", 0.5, -0.5, 960, 540, true), new_screen)
+
+		new_screen = graphical.addButtonToScreen(graphical.newButton("RETURN", -0.95, -0.925, 50, 50, false), new_screen)
 
 		glfw.SetKeyCallback("window", "keyboardManagerSelectionScreen")
 	}
@@ -183,10 +199,28 @@ func setScreen(screen str) () {
 		slot_machine = slots.newSlotMachine("SKYCOIN")
 
 		new_screen = graphical.newScreen("SLOTS SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
-		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ALL-ROWS", 0.85, -0.75, 350, 214, true), new_screen)
-		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-1", -0.475, -0.5, 400, 175, false), new_screen)
-		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-2",  0.0, -0.5, 400, 175, false), new_screen)
-		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-3",  0.475, -0.5, 400, 175, false), new_screen)
+
+		//new_screen = graphical.addButtonToScreen(graphical.newButton("MINUS", -0.48, -0.7, 50, 50, false), new_screen)
+		//new_screen = graphical.addButtonToScreen(graphical.newButton("PLUS", -0.28, -0.7, 50, 50, false), new_screen)
+		//new_screen = graphical.addTextboxToScreen(graphical.newTextbox(-0.395, -0.65, "10", "SkycoinSans36-Light"), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-1", -0.38, -0.8, 300, 100, false), new_screen)
+
+		//new_screen = graphical.addButtonToScreen(graphical.newButton("MINUS", -0.1, -0.7, 50, 50, false), new_screen)
+		//new_screen = graphical.addButtonToScreen(graphical.newButton("PLUS", 0.1, -0.7, 50, 50, false), new_screen)
+		//new_screen = graphical.addTextboxToScreen(graphical.newTextbox(-0.015, -0.65, "10", "SkycoinSans36-Light"), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-2",  0.0, -0.8, 300, 100, false), new_screen)
+
+		//new_screen = graphical.addButtonToScreen(graphical.newButton("MINUS", 0.28, -0.7, 50, 50, false), new_screen)
+		//new_screen = graphical.addButtonToScreen(graphical.newButton("PLUS", 0.48, -0.7, 50, 50, false), new_screen)
+		//new_screen = graphical.addTextboxToScreen(graphical.newTextbox(0.375, -0.65, "10", "SkycoinSans36-Light"), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-3",  0.38, -0.8, 300, 100, false), new_screen)
+
+		new_screen = graphical.addButtonToScreen(graphical.newButton("MINUS", 0.675, -0.7, 50, 50, false), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("PLUS", 0.875, -0.7, 50, 50, false), new_screen)
+		new_screen = graphical.addTextboxToScreen(graphical.newTextbox(0.760, -0.65, "10", "SkycoinSans36-Light"), new_screen)
+		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ALL-ROWS", 0.775, -0.9, 300, 100, true), new_screen)
+
+		new_screen = graphical.addButtonToScreen(graphical.newButton("RETURN", -0.95, -0.925, 50, 50, false), new_screen)
 
 		glfw.SetKeyCallback("window", "keyboardManagerSlotsScreen")
 	}
@@ -198,6 +232,16 @@ func main () {
 	initGlfw("window")
 	var program i32
 	program = initOpenGL()
+
+	var wd str
+	wd = os.GetWorkingDirectory()
+	fontFile := str.concat(wd, "fonts/Skycoin-Sans-otf/skycoin_light.ttf")
+
+  glfw.SetMouseButtonCallback("window", "mouseButton")
+
+	os.Open(fontFile)
+	gltext.LoadTrueType("SkycoinSans36-Light", fontFile, 36, 32, 127, gltext.LeftToRight)
+  os.Close(fontFile)
 
 	var x f64
   var y f64

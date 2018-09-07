@@ -76,8 +76,8 @@ func newRow(_id i32) (row Row){
   var x f32
   var y f32
   for i:=0; i<9; i++ {                                            // FIXME This spaghetti doesn't please me
-    x = f32.add(-0.475, f32.mul(0.475, i32.f32(i32.sub(_id, 1)))) // FIXME add as global var in constants.cx
-    y = f32.sub(1.6, f32.mul(i32.f32(i), 0.35))                   // FIXME add as global var in constants.cx
+    x = f32.add(-0.38, f32.mul(0.38, i32.f32(i32.sub(_id, 1)))) // FIXME add as global var in constants.cx
+    y = f32.sub(1.4, f32.mul(i32.f32(i), 0.35))                   // FIXME add as global var in constants.cx
     _slots[i] = newSlot(i32.rand(0,9), x, y)
   }
 
@@ -181,8 +181,8 @@ func loadSlotTextures(name str) (textures [9]i32) {
     textures[4] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/fiber.png"))
     textures[5] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/nodes.png"))
     textures[6] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/skyminer.png"))
-    textures[7] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/skycoin.png"))
-    textures[8] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/cx.png"))
+    textures[7] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/cxo.png"))
+    textures[8] = gl.NewTexture(sprintf("%s%s", wd, "textures/slots/skycoin/icons/kittycash.png"))
   }
 }
 
@@ -275,7 +275,7 @@ func spinRowAnimation(row Row, direction str) (row Row) {
   var slot Slot
   if gteq(f64.sub(glfw.GetTime(), row.timer), row.timer_limit) {
     slot = slots[row.base]
-    if f32.eq(slot.y, 1.95) {
+    if f32.eq(slot.y, 1.4) {
       row.spinning = false
     }
   }
@@ -292,8 +292,8 @@ func spinUpAnimation(slot Slot) (slot Slot) {
 
 func spinDownAnimation(slot Slot) (slot Slot) {
   slot.y = f32.sub(slot.y, 0.025)
-  if slot.y <= -1.2 {
-    slot.y = 1.95
+  if slot.y <= -1.74 {
+    slot.y = 1.4
   }
 }
 
