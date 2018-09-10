@@ -32,6 +32,7 @@ type Button struct {
 }
 
 type Textbox struct {
+  id str
   x f32
   y f32
   text str
@@ -45,8 +46,8 @@ type Spinner struct {
   width i32
   height i32
   texture i32
-  up_button Button
-  down_button Button
+  plus_button Button
+  minus_button Button
   textbox Textbox
 }
 
@@ -63,6 +64,7 @@ type Screen struct {
   textbox_count i32     // FIXME remove once len(array<struct>) is implemented
   textboxes [20]Textbox // FIXME remove limit once slices are working
 }
+
 
 /***************************************
  * Declaration of constructor functions.
@@ -123,8 +125,9 @@ func newImage(_name str, _x f32, _y f32, _width i32, _height i32) (image Image) 
    Output       : A Textbox (textbox Textbox)
    Desctription : Constructor for the Textbox struct.
 */
-func newTextbox(_x f32, _y f32, _text str, _font str) (textbox Textbox) {
+func newTextbox(_id str, _x f32, _y f32, _text str, _font str) (textbox Textbox) {
   textbox := Textbox{
+    id: _id,
     x: _x,
     y: _y,
     text: _text,
@@ -230,6 +233,40 @@ func positionInsideButton(x i32, y i32, button Button) (inside bool) {
       }
     }
   }
+}
+
+
+/**********************************************
+ * Declaration of textbox management functions.
+**********************************************/
+
+func getTextboxText(textbox_id str, screen Screen) (text str) {
+  var text str
+  var textboxes [20]Textbox
+  textboxes = screen.textboxes
+
+  var textbox Textbox
+  for i:=0; i<screen.textbox_count; i++ {
+    textbox = textboxes[i]
+    if str.eq(textbox.id, textbox_id) {
+      text = textbox.text
+    }
+  }
+}
+
+func setTextboxText(textbox_id str, text str, screen Screen) (screen Screen) {
+  var textboxes [20]Textbox
+  textboxes = screen.textboxes
+
+  var textbox Textbox
+  for i:=0; i<screen.textbox_count; i++ {
+    textbox = textboxes[i]
+    if str.eq(textbox.id, textbox_id) {
+      textbox.text = text
+      textboxes[i] = textbox
+    }
+  }
+  screen.textboxes = textboxes
 }
 
 

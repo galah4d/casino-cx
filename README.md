@@ -1,6 +1,6 @@
-# Casino CX - Version 0.1
+# Casino CX - Version 1.0
 
-![casino cx](https://github.com/galah4d/casino-cx/blob/master/screenshots/main-screen.png)
+![casino cx](https://github.com/galah4d/casino-cx/blob/master/screenshots/slots-screen.png)
 
 Casino CX is a CX application featuring multiple popular casino games such as:
 

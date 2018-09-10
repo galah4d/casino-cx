@@ -1,12 +1,56 @@
 package main
 
+/***************************************
+ * Import CX modules.
+***************************************/
+
 import "gl"
 import "glfw"
 import "gltext"
 import "os"
 
+
+/***************************************
+ * Import custom modules.
+***************************************/
+
 import "graphical"
 import "slots"
+
+
+/***************************************
+ * Declaration of the Player struct.
+***************************************/
+
+type Player struct {
+	username str
+	address str
+	balance f32
+	pending_balance f32
+}
+
+func newPlayer(_username str, _address str) (player Player) {
+	player := Player{
+		username: _username,
+		address: _address,
+		balance: 1502.6,
+		pending_balance: 0.0}
+}
+
+func deposit(player Player, amount f32) (player Player) {
+	player.balance = f32.add(player.balance, amount)
+}
+
+func withdraw(player Player, amount f32) (player Player) {
+	if f32.gteq(player.balance, amount) {
+		player.balance = f32.sub(player.balance, amount)
+	}
+	return player
+}
+
+func confirmTransaction(player Player) (player Player) {
+	player.balance = f32.add(player.balance, player.pending_balance)
+}
 
 var SCREEN_WIDTH i32 = 1920
 var SCREEN_HEIGHT i32 = 1000
@@ -14,6 +58,7 @@ var SCREEN_HEIGHT i32 = 1000
 var EXIT_FLAG bool = false
 var current_screen graphical.Screen
 
+var player Player
 var slot_machine slots.SlotMachine
 
 func initOpenGL () (program i32) {
@@ -110,41 +155,60 @@ func keyboardManagerSelectionScreen(window str, key i32, scancode i32, action i3
 
 func keyboardManagerSlotsScreen(window str, key i32, scancode i32, action i32, mods i32) {
 	var button_type str
+	var bet_amount f32
+	var spin_row [3]bool
 	var textbox graphical.Textbox
 	var textboxes[20] graphical.Textbox
 
 	// Enter
 	if bool.and(i32.eq(key, 257), i32.eq(action, 1)) {
 		button_type = graphical.getActiveButton(current_screen)
+		bet_amount = str.f32(graphical.getTextboxText("BET-AMOUNT", current_screen))
+
 		if button_type == "SPIN-ALL-ROWS" {
-				slot_machine = slots.spin(slot_machine, true, true, true)
+			spin_row = [3]bool{true, true, true}
+			spinSlotMachine(spin_row)
 		}
 		if button_type == "SPIN-ROW-1" {
-			slot_machine = slots.spin(slot_machine, true, false, false)
+			spin_row = [3]bool{true, false, false}
+			spinSlotMachine(spin_row)
 		}
 		if button_type == "SPIN-ROW-2" {
-			slot_machine = slots.spin(slot_machine, false, true, false)
+			spin_row = [3]bool{false, true, false}
+			spinSlotMachine(spin_row)
 		}
 		if button_type == "SPIN-ROW-3" {
-			slot_machine = slots.spin(slot_machine, false, false, true)
+			spin_row = [3]bool{false, false, true}
+			spinSlotMachine(spin_row)
 		}
+
 		if button_type == "MINUS" {
-			textboxes = current_screen.textboxes
-			textbox = textboxes[0]
-			textbox.text = i32.str(i32.sub(str.i32(textbox.text), 1))
-			textboxes[0] = textbox
-			current_screen.textboxes = textboxes
+			if f32.gt(bet_amount, 1.0) {
+				bet_amount = f32.sub(bet_amount, 1.0)
+			}
+			current_screen = graphical.setTextboxText("BET-AMOUNT", f32.str(bet_amount), current_screen)
 		}
 		if button_type == "PLUS" {
-			textboxes = current_screen.textboxes
-			textbox = textboxes[0]
-			textbox.text = i32.str(i32.add(str.i32(textbox.text), 1))
-			textboxes[0] = textbox
-			current_screen.textboxes = textboxes
+			if f32.lt(bet_amount, 99.0) {
+				bet_amount = f32.add(bet_amount, 1.0)
+			}
+			current_screen = graphical.setTextboxText("BET-AMOUNT", f32.str(bet_amount), current_screen)
 		}
+
 		if button_type == "RETURN" {
 			setScreen("SELECTION SCREEN")
 		}
+	}
+}
+
+func spinSlotMachine(rows_to_spin [3]bool) () {
+	var bet_amount f32
+	bet_amount = str.f32(graphical.getTextboxText("BET-AMOUNT", current_screen))
+
+	if f32.lteq(bet_amount, player.balance) && bool.not(slot_machine.spinning) {
+		player = withdraw(player, bet_amount)
+		current_screen = graphical.setTextboxText("BALANCE", sprintf("%s SKY",f32.str(player.balance)), current_screen)
+		slot_machine = slots.spin(slot_machine, rows_to_spin, bet_amount)
 	}
 }
 
@@ -162,6 +226,9 @@ func setScreen(screen str) () {
 	if str.eq(screen, "ACCOUNT SCREEN") {
 		new_screen = graphical.newScreen("ACCOUNT SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
 		new_screen = graphical.addButtonToScreen(graphical.newButton("AVATAR", -0.43, 0.2, 255, 255, false), new_screen)
+		new_screen = graphical.addTextboxToScreen(graphical.newTextbox("USERNAME", -0.15, 0.4, player.username, "SkycoinSans36-Light"), new_screen)
+		new_screen = graphical.addTextboxToScreen(graphical.newTextbox("WALLET-ADDRESS", -0.15, 0.1, player.address, "SkycoinSans36-Light"), new_screen)
+		new_screen = graphical.addTextboxToScreen(graphical.newTextbox("BALANCE", -0.15, -0.2, sprintf("%s SKY",f32.str(player.balance)), "SkycoinSans36-Light"), new_screen)
 		new_screen = graphical.addButtonToScreen(graphical.newButton("DEPOSIT", -0.2, -0.65, 360, 130, false), new_screen)
 		new_screen = graphical.addButtonToScreen(graphical.newButton("WITHDRAW", 0.2, -0.65, 360, 130, false), new_screen)
 		new_screen = graphical.addButtonToScreen(graphical.newButton("RETURN", -0.95, -0.925, 50, 50, false), new_screen)
@@ -200,24 +267,15 @@ func setScreen(screen str) () {
 
 		new_screen = graphical.newScreen("SLOTS SCREEN", SCREEN_WIDTH, SCREEN_HEIGHT)
 
-		//new_screen = graphical.addButtonToScreen(graphical.newButton("MINUS", -0.48, -0.7, 50, 50, false), new_screen)
-		//new_screen = graphical.addButtonToScreen(graphical.newButton("PLUS", -0.28, -0.7, 50, 50, false), new_screen)
-		//new_screen = graphical.addTextboxToScreen(graphical.newTextbox(-0.395, -0.65, "10", "SkycoinSans36-Light"), new_screen)
+		new_screen = graphical.addTextboxToScreen(graphical.newTextbox("BALANCE", -0.86, -0.8, sprintf("%s SKY", f32.str(player.balance)), "SkycoinSans36-Light"), new_screen)
+
 		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-1", -0.38, -0.8, 300, 100, false), new_screen)
-
-		//new_screen = graphical.addButtonToScreen(graphical.newButton("MINUS", -0.1, -0.7, 50, 50, false), new_screen)
-		//new_screen = graphical.addButtonToScreen(graphical.newButton("PLUS", 0.1, -0.7, 50, 50, false), new_screen)
-		//new_screen = graphical.addTextboxToScreen(graphical.newTextbox(-0.015, -0.65, "10", "SkycoinSans36-Light"), new_screen)
 		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-2",  0.0, -0.8, 300, 100, false), new_screen)
-
-		//new_screen = graphical.addButtonToScreen(graphical.newButton("MINUS", 0.28, -0.7, 50, 50, false), new_screen)
-		//new_screen = graphical.addButtonToScreen(graphical.newButton("PLUS", 0.48, -0.7, 50, 50, false), new_screen)
-		//new_screen = graphical.addTextboxToScreen(graphical.newTextbox(0.375, -0.65, "10", "SkycoinSans36-Light"), new_screen)
 		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ROW-3",  0.38, -0.8, 300, 100, false), new_screen)
 
 		new_screen = graphical.addButtonToScreen(graphical.newButton("MINUS", 0.675, -0.7, 50, 50, false), new_screen)
 		new_screen = graphical.addButtonToScreen(graphical.newButton("PLUS", 0.875, -0.7, 50, 50, false), new_screen)
-		new_screen = graphical.addTextboxToScreen(graphical.newTextbox(0.760, -0.65, "10", "SkycoinSans36-Light"), new_screen)
+		new_screen = graphical.addTextboxToScreen(graphical.newTextbox("BET-AMOUNT", 0.760, -0.65, "10", "SkycoinSans36-Light"), new_screen)
 		new_screen = graphical.addButtonToScreen(graphical.newButton("SPIN-ALL-ROWS", 0.775, -0.9, 300, 100, true), new_screen)
 
 		new_screen = graphical.addButtonToScreen(graphical.newButton("RETURN", -0.95, -0.925, 50, 50, false), new_screen)
@@ -248,6 +306,8 @@ func main () {
 
 	setScreen("MAIN SCREEN")
 
+	player = newPlayer("@taekwondoughlas", "vQxgd4Mq2eReLj3fhigSBGWmfNSMqQMoL3")
+
 	for bool.not(glfw.ShouldClose("window")) && bool.not(EXIT_FLAG) {
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT)
@@ -256,30 +316,10 @@ func main () {
 		gl.Enable(gl.TEXTURE_2D)
 		gl.Translatef(0.0, 0.0, 0.0)
 
-		/*drawBackground(CURRENT_MENU)
-
-		if str.eq(CURRENT_MENU, "MAIN MENU") {
-			graphical.renderButton(settings_button)
-			graphical.renderButton(play_button)
-			graphical.renderButton(exit_button)
-		}
-		if str.eq(CURRENT_MENU, "SELECT MENU") {
-			graphical.renderButton(select_skycoin_button)
-			graphical.renderButton(select_kittycash_button)
-			graphical.renderButton(select_sudo_button)
-			graphical.renderButton(select_skywire_button)
-		}
-		if str.eq(CURRENT_MENU, "PLAY MENU") {
-			slot_machine = slots.update(slot_machine)
-			slots.render(slot_machine)
-			graphical.renderButton(spin_all_rows_button)
-			graphical.renderButton(spin_row_1_button)
-			graphical.renderButton(spin_row_2_button)
-			graphical.renderButton(spin_row_3_button)
-		}*/
-
 		if str.eq(current_screen.name, "SLOTS SCREEN") {
-			slot_machine = slots.update(slot_machine)
+			slot_machine, player.pending_balance = slots.update(slot_machine)
+			player = confirmTransaction(player)
+			current_screen = graphical.setTextboxText("BALANCE", sprintf("%s SKY",f32.str(player.balance)), current_screen)
 			slots.render(slot_machine)
 		}
 
