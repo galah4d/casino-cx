@@ -52,4 +52,7 @@ to the address below and/or dm me some kind words on [telegram](https://t.me/tae
 Thank you Skycoin community!
 
 # Disclamer
+Do NOT send funds to the app in order to gamble!
+Currently it is not possible to gamble in the app as CX is still not able to interact with Fiber's blockchain,
+CX's development roadmap is available [here](https://raw.githubusercontent.com/skycoin/cx/master/cx-roadmap.png).
 I am not part of the team responsible for the development of the CX programming language.
