@@ -185,15 +185,12 @@ func spin(slot_machine SlotMachine, spin_row [3]bool, _bet_amount f32) (slot_mac
   if bool.not(slot_machine.spinning) {
     var spin_time f64 = 4.0D
 
-    var rows [3]Row
-    rows = slot_machine.rows
     for i:=0; i<3; i++ {
       if bool.eq(spin_row[i], true) {
-        rows[i] = spinRow(rows[i], spin_time)
+        slot_machine.rows[i] = spinRow(slot_machine.rows[i], spin_time)
         spin_time = f64.add(spin_time, 2.0D)
       }
     }
-    slot_machine.rows = rows
     slot_machine.bet_amount = _bet_amount
     slot_machine.results = checkResults(slot_machine)
   }
@@ -286,14 +283,9 @@ func update(slot_machine SlotMachine) (slot_machine SlotMachine, won_amount f32)
 }
 
 func shouldSpin(slot_machine SlotMachine) (should_spin bool) {
-  var rows [3]Row
-  rows = slot_machine.rows
-
-  var row Row
   var should_spin bool = false
   for i:=0; i<3; i++ {
-    row = rows[i]
-    if row.spinning {
+    if slot_machine.rows[i].spinning {
       should_spin = true
     }
   }
@@ -304,29 +296,22 @@ func shouldSpin(slot_machine SlotMachine) (should_spin bool) {
 *********************************************/
 // FIXME addd comments
 func spinRowAnimation(row Row, direction str) (row Row) {
-  var slots [9]Slot
-  slots = row.slots
-
   if bool.eq(row.spinning, true) {
     for i:=0; i<9; i++ {
       if direction == "UP" {
-        slots[i] = spinUpAnimation(slots[i])
+        row.slots[i] = spinUpAnimation(row.slots[i])
       }
       if direction == "DOWN" {
-        slots[i] = spinDownAnimation(slots[i])
+        row.slots[i] = spinDownAnimation(row.slots[i])
       }
     }
   }
 
-  var slot Slot
   if gteq(f64.sub(glfw.GetTime(), row.timer), row.timer_limit) {
-    slot = slots[row.base]
-    if f32.eq(slot.y, 1.4) {
+    if f32.eq(row.slots[row.base].y, 1.4) {
       row.spinning = false
     }
   }
-
-  row.slots = slots
 }
 
 func spinUpAnimation(slot Slot) (slot Slot) {
@@ -353,13 +338,11 @@ func spinDownAnimation(slot Slot) (slot Slot) {
    Output       : A spinning row (row Row)
    Desctription : Renders a slot machine.
 */
-func render(slot_machine SlotMachine) (slot_machine SlotMachine) {
+func render(slot_machine SlotMachine) {
   // Renders each row as well as corresponding slots.
-  var rows [3]Row
-  rows = slot_machine.rows
-  renderRow(rows[0], slot_machine.textures)
-  renderRow(rows[1], slot_machine.textures)
-  renderRow(rows[2], slot_machine.textures)
+  for i:=0; i<3; i++ {
+    renderRow(slot_machine.rows[i], slot_machine.textures)
+  }
 
   // Renders the actual slot machine.
   gl.LoadIdentity()
@@ -406,14 +389,11 @@ func renderRow(row Row, textures [9]i32) () {
    Desctription : Renders a row's slot.
 */
 func renderSlot(slot Slot, textures [9]i32) () {
-  var width f32
-  var height f32
-
   gl.LoadIdentity()
   gl.BindTexture(gl.TEXTURE_2D, textures[slot.id])
 
-  width = scale(slot.width, SCREEN_WIDTH)
-  height = scale(slot.height, SCREEN_HEIGHT)
+  width := scale(slot.width, SCREEN_WIDTH)
+  height := scale(slot.height, SCREEN_HEIGHT)
 
 	gl.Scalef(width, height, 0.0)
 
@@ -454,16 +434,9 @@ func main()  {
 
   gl.LinkProgram(program)
 
+
   var slot_machine SlotMachine
   slot_machine = newSlotMachine("SKYCOIN")
-
-  var row Row
-
-  i32.print(row.id)
-
-  var slots [9]Slot
-  var slot Slot
-
 
   for bool.not(glfw.ShouldClose("window")) {
     gl.ClearColor(0.0, 0.0, 0.0, 1.0)
@@ -473,7 +446,7 @@ func main()  {
 		gl.Enable(gl.TEXTURE_2D)
 		gl.Translatef(0.0, 0.0, 0.0)
 
-    slot_machine = render(slot_machine)
+    render(slot_machine)
 
     glfw.PollEvents()
 		glfw.SwapBuffers("window")

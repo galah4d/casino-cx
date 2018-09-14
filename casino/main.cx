@@ -209,6 +209,7 @@ func spinSlotMachine(rows_to_spin [3]bool) () {
 		player = withdraw(player, bet_amount)
 		current_screen = graphical.setTextboxText("BALANCE", sprintf("%s SKY",f32.str(player.balance)), current_screen)
 		slot_machine = slots.spin(slot_machine, rows_to_spin, bet_amount)
+		//slot_machine = slots.spin(slot_machine, true, true, true, bet_amount)
 	}
 }
 
