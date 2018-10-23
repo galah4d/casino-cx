@@ -1,0 +1,7 @@
+package constants_pkg
+
+var SCREEN_WIDTH i32 = 1280
+var SCREEN_HEIGHT i32 = 1024
+
+var LOGO_WIDTH i32 = 600
+var LOGO_HEIGHT i32 = 151

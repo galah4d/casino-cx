@@ -1,0 +1,4 @@
+package constants_pkg
+
+var SCREEN_WIDTH i32 = 1280
+var SCREEN_HEIGHT i32 = 1024

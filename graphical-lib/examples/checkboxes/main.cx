@@ -1,0 +1,66 @@
+package main
+
+import "gl"
+import "glfw"
+
+import "constants_pkg"
+import "image_pkg"
+import "button_pkg"
+import "layer_pkg"
+import "screen_pkg"
+
+var screen screen_pkg.Screen
+
+func mouseButtonManager(window str, key i32, scancode i32, action i32, mods i32) {
+	if i32.eq(scancode, 1) && i32.eq(key, glfw.MouseButtonLeft) {
+    screen = screen_pkg.clickScreen(screen)
+	}
+}
+
+func main () {
+  glfw.Init()
+  glfw.WindowHint(glfw.Resizable, glfw.False)
+
+  glfw.CreateWindow("window", constants_pkg.SCREEN_WIDTH, constants_pkg.SCREEN_HEIGHT, "Image Example")
+  glfw.MakeContextCurrent("window")
+
+  gl.Init()
+  gl.Enable(gl.BLEND)
+  gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+  var program i32
+  program = gl.CreateProgram()
+  gl.LinkProgram(program)
+
+  glfw.SetMouseButtonCallback("window", "mouseButtonManager")
+
+  var x f64
+  var y f64
+
+  var main_layer layer_pkg.Layer
+  main_layer = layer_pkg.newLayer("main layer", 0.0, 0.0, constants_pkg.SCREEN_WIDTH, constants_pkg.SCREEN_HEIGHT, true, true)
+  main_layer = layer_pkg.addImageToLayer(image_pkg.newImage("background", 0.0, 0.0, constants_pkg.SCREEN_WIDTH, constants_pkg.SCREEN_HEIGHT, "textures/background.jpg"), main_layer)
+
+  main_layer = layer_pkg.addCheckBoxToLayer(button_pkg.newCheckbox("checkbox1", -0.5, 0.0, 200, 200, "textures/unchecked.png", "textures/checked.png"), main_layer)
+  main_layer = layer_pkg.addCheckBoxToLayer(button_pkg.newCheckbox("checkbox2",  0.0, 0.0, 200, 200, "textures/unchecked.png", "textures/checked.png"), main_layer)
+  main_layer = layer_pkg.addCheckBoxToLayer(button_pkg.newCheckbox("checkbox3",  0.5, 0.0, 200, 200, "textures/unchecked.png", "textures/checked.png"), main_layer)
+
+  screen = screen_pkg.newScreen("main screen", constants_pkg.SCREEN_WIDTH, constants_pkg.SCREEN_HEIGHT)
+  screen = screen_pkg.addLayerToScreen(main_layer, screen)
+
+  for bool.not(glfw.ShouldClose("window")) {
+    gl.ClearColor(0.0, 0.0, 0.0, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		gl.LoadIdentity()
+		gl.Enable(gl.TEXTURE_2D)
+		gl.Translatef(0.0, 0.0, 0.0)
+
+    x, y = glfw.GetCursorPos("window")
+    screen = screen_pkg.updateScreen(f64.i32(x), f64.i32(y), screen)
+    screen_pkg.renderScreen(screen)
+
+    glfw.PollEvents()
+		glfw.SwapBuffers("window")
+  }
+}

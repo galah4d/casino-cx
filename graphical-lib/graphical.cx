@@ -1,0 +1,654 @@
+package constants_pkg
+
+var SCREEN_WIDTH i32 = 1920
+var SCREEN_HEIGHT i32 = 1000
+
+
+package position_pkg
+
+type Position struct {
+  x f32
+  y f32
+}
+
+func newPosition(_x f32, _y f32) (position Position) {
+  position := Position{
+    x: _x,
+    y: _y}
+}
+
+
+package dimensions_pkg
+
+type Dimensions struct {
+  width i32
+  height i32
+}
+
+func newDimensions(_width i32, _height i32) (dimensions Dimensions) {
+  dimensions := Dimensions{
+    width: _width,
+    height: _height}
+}
+
+
+package aux_pkg
+
+import "gl"
+import "os"
+
+import "constants_pkg"
+import "position_pkg"
+import "dimensions_pkg"
+
+func loadTexture(relative_path str) (texture i32) {
+  var wd str
+	wd = os.GetWorkingDirectory()
+  texture := gl.NewTexture(sprintf("%s%s", wd, relative_path))
+}
+
+func scale(value i32, max i32) (scaled f32) {
+	scaled = f32.div(i32.f32(value), i32.f32(max))
+}
+
+func relative2absoluteX(relative_position f32, max_px i32) (absolute_position i32) {
+  absolute_position := f32.i32(f32.div(i32.f32(max_px), 2.0) + f32.mul(relative_position, f32.div(i32.f32(max_px), 2.0)))
+}
+
+func relative2absoluteY(relative_position f32, max_px i32) (absolute_position i32) {
+  absolute_position := f32.i32(f32.div(i32.f32(max_px), 2.0) - f32.mul(relative_position, f32.div(i32.f32(max_px), 2.0)))
+}
+
+func cursorInsideArea(mouse_x i32, mouse_y i32, area_position position_pkg.Position, area_dimensions dimensions_pkg.Dimensions) (inside bool) {
+  var inside bool = false
+  if i32.gteq(mouse_x, i32.sub(relative2absoluteX(area_position.x, constants_pkg.SCREEN_WIDTH), i32.div(area_dimensions.width, 2))) {
+    if i32.lteq(mouse_x, i32.add(relative2absoluteX(area_position.x, constants_pkg.SCREEN_WIDTH), i32.div(area_dimensions.width, 2))) {
+      if i32.gteq(mouse_y, i32.sub(relative2absoluteY(area_position.y, constants_pkg.SCREEN_HEIGHT), i32.div(area_dimensions.height, 2))) {
+        if i32.lteq(mouse_y, i32.add(relative2absoluteY(area_position.y, constants_pkg.SCREEN_HEIGHT), i32.div(area_dimensions.height, 2))) {
+          inside = true  // FIXME I won't allow this shit tier code...
+        }
+      }
+    }
+  }
+}
+
+package image_pkg
+
+import "gl"
+
+import "constants_pkg"
+import "aux_pkg"
+import "position_pkg"
+import "dimensions_pkg"
+
+type Image struct {
+  id str
+  position position_pkg.Position
+  dimensions dimensions_pkg.Dimensions
+  texture i32
+}
+
+func newImage(_id str, _x f32, _y f32, _width i32, _height i32, _path str) (image Image) {
+  image := Image{
+    id: _id,
+    position: position_pkg.newPosition(_x, _y),
+    dimensions: dimensions_pkg.newDimensions(_width, _height),
+    texture: aux_pkg.loadTexture(_path)}
+}
+
+func renderImage(image Image) () {
+  gl.LoadIdentity()
+  gl.BindTexture(gl.TEXTURE_2D, image.texture)
+
+  gl.Translatef(image.position.x, image.position.y, 0.0)
+
+  scaled_w := aux_pkg.scale(image.dimensions.width, constants_pkg.SCREEN_WIDTH)
+  scaled_h := aux_pkg.scale(image.dimensions.height, constants_pkg.SCREEN_HEIGHT)
+  gl.Scalef(scaled_w, scaled_h, 0.0)
+
+	gl.Begin(gl.QUADS)
+	gl.TexCoord2d(0.0D, 0.0D);
+	gl.Vertex3f(-1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 0.0D);
+	gl.Vertex3f(1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 1.0D);
+	gl.Vertex3f(1.0, -1.0, 0.0);
+	gl.TexCoord2d(0.0D, 1.0D);
+	gl.Vertex3f(-1.0, -1.0, 0.0);
+	gl.End();
+}
+
+
+
+package button_pkg
+
+import "gl"
+
+import "constants_pkg"
+import "aux_pkg"
+import "position_pkg"
+import "dimensions_pkg"
+
+type Button struct {
+  id str
+  position Position
+  dimensions Dimensions
+  hovered bool
+  textures [2]i32
+}
+
+func newButton(_id str, _x f32, _y f32, _width i32, _height i32, _path1 str, _path2 str) (button Button) {
+  var _textures [2]i32
+  _textures[0] = aux_pkg.loadTexture(_path1)
+  _textures[1] = aux_pkg.loadTexture(_path2)
+
+  button := Button{
+    id: _id,
+    position: position_pkg.newPosition(_x, _y),
+    dimensions: dimensions_pkg.newDimensions(_width, _height),
+    hovered: false,
+    textures: _textures}
+}
+
+func updateButton(mouse_x i32, mouse_y i32, button Button) (button Button) {
+  if aux_pkg.cursorInsideArea(mouse_x, mouse_y, button.position, button.dimensions) {
+    button.hovered = true
+  } else {
+    button.hovered = false
+  }
+}
+
+func clickButton(button Button) (button Button) {
+  if button.hovered {
+    str.print(button.id)
+  }
+}
+
+func renderButton(button Button) () {
+  gl.LoadIdentity()
+
+  if bool.not(button.hovered) {
+    gl.BindTexture(gl.TEXTURE_2D, button.textures[0])
+  } else {
+    gl.BindTexture(gl.TEXTURE_2D, button.textures[1])
+  }
+
+  gl.Translatef(button.position.x, button.position.y, 0.0)
+
+  scaled_w := aux_pkg.scale(button.dimensions.width, constants_pkg.SCREEN_WIDTH)
+  scaled_h := aux_pkg.scale(button.dimensions.height, constants_pkg.SCREEN_HEIGHT)
+  gl.Scalef(scaled_w, scaled_h, 0.0)
+
+	gl.Begin(gl.QUADS)
+	gl.TexCoord2d(0.0D, 0.0D);
+	gl.Vertex3f(-1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 0.0D);
+	gl.Vertex3f(1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 1.0D);
+	gl.Vertex3f(1.0, -1.0, 0.0);
+	gl.TexCoord2d(0.0D, 1.0D);
+	gl.Vertex3f(-1.0, -1.0, 0.0);
+	gl.End();
+}
+
+
+type CheckBox struct {
+  id str
+  position Position
+  dimensions Dimensions
+  hovered bool
+  checked bool
+  textures [2]i32
+}
+
+func newCheckbox(_id str, _x f32, _y f32, _width i32, _height i32, _path1 str, _path2 str) (checkbox CheckBox) {
+  var _textures [2]i32
+  _textures[0] = aux_pkg.loadTexture(_path1)
+  _textures[1] = aux_pkg.loadTexture(_path2)
+
+  checkbox := CheckBox{
+    id: _id,
+    position: position_pkg.newPosition(_x, _y),
+    dimensions: dimensions_pkg.newDimensions(_width, _height),
+    hovered: false,
+    checked: false,
+    textures: _textures}
+}
+
+func updateCheckbox(mouse_x i32, mouse_y i32, checkbox CheckBox) (checkbox CheckBox) {
+  if aux_pkg.cursorInsideArea(mouse_x, mouse_y, checkbox.position, checkbox.dimensions) {
+    checkbox.hovered = true
+  } else {
+    checkbox.hovered = false
+  }
+}
+
+func clickCheckbox(checkbox CheckBox) (checkbox CheckBox) {
+  if checkbox.hovered {
+    checkbox.checked = bool.not(checkbox.checked)
+  }
+}
+
+func renderCheckBox(checkbox CheckBox) () {
+  gl.LoadIdentity()
+
+  if bool.not(checkbox.checked) {
+    gl.BindTexture(gl.TEXTURE_2D, checkbox.textures[0])
+  } else {
+    gl.BindTexture(gl.TEXTURE_2D, checkbox.textures[1])
+  }
+
+  gl.Translatef(checkbox.position.x, checkbox.position.y, 0.0)
+
+  scaled_w := aux_pkg.scale(checkbox.dimensions.width, constants_pkg.SCREEN_WIDTH)
+  scaled_h := aux_pkg.scale(checkbox.dimensions.height, constants_pkg.SCREEN_HEIGHT)
+  gl.Scalef(scaled_w, scaled_h, 0.0)
+
+	gl.Begin(gl.QUADS)
+	gl.TexCoord2d(0.0D, 0.0D);
+	gl.Vertex3f(-1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 0.0D);
+	gl.Vertex3f(1.0, 1.0, 0.0);
+	gl.TexCoord2d(1.0D, 1.0D);
+	gl.Vertex3f(1.0, -1.0, 0.0);
+	gl.TexCoord2d(0.0D, 1.0D);
+	gl.Vertex3f(-1.0, -1.0, 0.0);
+	gl.End();
+}
+
+
+
+package textbox_pkg
+
+import "gl"
+import "gltext"
+
+import "constants_pkg"
+import "aux_pkg"
+import "position_pkg"
+
+type Textbox struct {
+  id str
+  position position_pkg.Position
+  text str
+  font str
+}
+
+func newTextbox(_id str, _x f32, _y f32, _text str, _font str) (textbox Textbox) {
+  textbox := Textbox{
+    id: _id,
+    position: position_pkg.newPosition(_x, _y),
+    text: _text,
+    font: _font}
+}
+
+func renderTextbox(textbox Textbox) () { // FIXME color overlay
+  gl.LoadIdentity()
+  gl.Color3f(0.98, 0.98, 0.98)        // FIXME add custom colors
+
+  x := i32.f32(aux_pkg.relative2absoluteX(textbox.position.x, constants_pkg.SCREEN_WIDTH))
+  y := i32.f32(aux_pkg.relative2absoluteY(textbox.position.y, constants_pkg.SCREEN_HEIGHT))
+  gltext.Printf(textbox.font, x, y, textbox.text)
+}
+
+
+package spinbox_pkg
+
+import "button_pkg"
+import "textbox_pkg"
+
+type Spinbox struct {
+  id str
+  value i32
+  min_value i32
+  max_value i32
+  minus_button button_pkg.Button
+  plus_button button_pkg.Button
+  textbox textbox_pkg.Textbox
+}
+
+func newSpinbox(_id str, _value i32, _min_value i32, _max_value i32, _minus_button button_pkg.Button, _plus_button button_pkg.Button, _textbox textbox_pkg.Textbox) (spinbox Spinbox) {
+  spinbox := Spinbox {
+    id: _id,
+    value: _value,
+    min_value: _min_value,
+    max_value: _max_value,
+    minus_button: _minus_button,
+    plus_button: _plus_button,
+    textbox: _textbox}
+}
+
+func spinboxMinus(spinbox Spinbox) (spinbox Spinbox) {
+  if spinbox.value > spinbox.min_value {
+    spinbox.value = i32.sub(spinbox.value, 1)
+  }
+  spinbox.textbox.text = i32.str(spinbox.value)
+}
+
+func spinboxPlus(spinbox Spinbox) (spinbox Spinbox) {
+  if spinbox.value < spinbox.max_value {
+    spinbox.value = i32.add(spinbox.value, 1)
+  }
+  spinbox.textbox.text = i32.str(spinbox.value)
+}
+
+func updateSpinbox(mouse_x i32, mouse_y i32, spinbox Spinbox) (spinbox Spinbox) {
+  spinbox.minus_button = button_pkg.updateButton(mouse_x, mouse_y, spinbox.minus_button)
+  spinbox.plus_button = button_pkg.updateButton(mouse_x, mouse_y, spinbox.plus_button)
+  spinbox.textbox.text = i32.str(spinbox.value)
+}
+
+func clickSpinbox(spinbox Spinbox) (spinbox Spinbox) {
+  if spinbox.minus_button.hovered {
+    spinbox = spinboxMinus(spinbox)
+  }
+  if spinbox.plus_button.hovered {
+    spinbox = spinboxPlus(spinbox)
+  }
+}
+
+func renderSpinbox(spinbox Spinbox) () {
+  button_pkg.renderButton(spinbox.minus_button)
+  button_pkg.renderButton(spinbox.plus_button)
+  textbox_pkg.renderTextbox(spinbox.textbox)
+}
+
+package layer_pkg
+
+import "gl"
+
+import "position_pkg"
+import "dimensions_pkg"
+
+import "image_pkg"
+import "button_pkg"
+import "textbox_pkg"
+import "spinbox_pkg"
+
+type Layer struct {
+  id str
+  position position_pkg.Position
+  dimensions dimensions_pkg.Dimensions
+
+  visible bool
+  active bool
+  pending_callback bool
+  callback_id str
+
+  image_count i32
+  images [20]image_pkg.Image      // FIXME remove limit
+
+  button_count i32
+  buttons [20]button_pkg.Button
+
+  checkbox_count i32
+  checkboxes [20]button_pkg.CheckBox
+
+  textbox_count i32
+  textboxes [20]textbox_pkg.Textbox
+
+  spinbox_count i32
+  spinboxes [20]spinbox_pkg.Spinbox
+}
+
+func newLayer(_id str, _x f32, _y f32, _width i32, _height i32, _visible bool, _active bool) (layer Layer) {
+  layer := Layer{
+    id: _id,
+    position: position_pkg.newPosition(_x, _y),
+    dimensions: dimensions_pkg.newDimensions(_width, _height),
+    visible: _visible,
+    active: _active,
+    pending_callback: false,
+    image_count: 0,
+    button_count: 0,
+    checkbox_count: 0,
+    textbox_count: 0,
+    spinbox_count: 0}
+}
+
+func addImageToLayer(image image_pkg.Image, layer Layer) (layer Layer) {
+  layer.images[layer.image_count] = image
+  layer.image_count = i32.add(layer.image_count, 1)
+}
+
+func addButtonToLayer(button button_pkg.Button, layer Layer) (layer Layer) {
+  layer.buttons[layer.button_count] = button
+  layer.button_count = i32.add(layer.button_count, 1)
+}
+
+func addCheckBoxToLayer(checkbox button_pkg.CheckBox, layer Layer) (layer Layer) {
+  layer.checkboxes[layer.checkbox_count] = checkbox
+  layer.checkbox_count = i32.add(layer.checkbox_count, 1)
+}
+
+func addTextboxToLayer(textbox textbox_pkg.Textbox, layer Layer) (layer Layer) {
+  layer.textboxes[layer.textbox_count] = textbox
+  layer.textbox_count = i32.add(layer.textbox_count, 1)
+}
+
+func addSpinboxToLayer(spinbox spinbox_pkg.Spinbox, layer Layer) (layer Layer) {
+  layer.spinboxes[layer.spinbox_count] = spinbox
+  layer.spinbox_count = i32.add(layer.spinbox_count, 1)
+}
+
+func updateLayer(mouse_x i32, mouse_y i32, layer Layer) (layer Layer) {
+  if layer.active {
+    var i i32
+
+    for i=0; i<layer.button_count; i++ {
+      layer.buttons[i] = button_pkg.updateButton(mouse_x, mouse_y, layer.buttons[i])
+    }
+    for i=0; i<layer.checkbox_count; i++ {
+      layer.checkboxes[i] = button_pkg.updateCheckbox(mouse_x, mouse_y, layer.checkboxes[i])
+    }
+    for i=0; i<layer.spinbox_count; i++ {
+      layer.spinboxes[i] = spinbox_pkg.updateSpinbox(mouse_x, mouse_y, layer.spinboxes[i])
+    }
+  }
+}
+
+func clickLayer(layer Layer) (layer Layer) {
+  if layer.active {
+    var i i32
+
+    for i=0; i<layer.checkbox_count; i++ {
+      layer.checkboxes[i] = button_pkg.clickCheckbox(layer.checkboxes[i])
+    }
+    for i=0; i<layer.spinbox_count; i++ {
+      layer.spinboxes[i] = spinbox_pkg.clickSpinbox(layer.spinboxes[i])
+    }
+
+    for i=0; i<layer.button_count; i++ {
+      if layer.buttons[i].hovered {
+        layer.pending_callback = true
+        layer.callback_id = layer.buttons[i].id
+        layer = layerCallback(layer.callback_id, layer)
+      }
+    }
+  }
+}
+
+func layerCallback(callback_id str, layer Layer) (layer Layer){
+  if callback_id == "play button" {
+    layer.button_count = 2
+    layer.pending_callback = false
+  }
+}
+
+func renderLayer(layer Layer) (){
+  if layer.visible {
+    var i i32
+
+    for i=0; i<layer.image_count; i++ {
+      image_pkg.renderImage(layer.images[i])
+    }
+    for i=0; i<layer.button_count; i++ {
+      button_pkg.renderButton(layer.buttons[i])
+    }
+    for i=0; i<layer.checkbox_count; i++ {
+      button_pkg.renderCheckBox(layer.checkboxes[i])
+    }
+    for i=0; i<layer.textbox_count; i++ {
+      textbox_pkg.renderTextbox(layer.textboxes[i])
+    }
+    for i=0; i<layer.spinbox_count; i++ {
+      spinbox_pkg.renderSpinbox(layer.spinboxes[i])
+    }
+  }
+}
+
+
+package screen_pkg
+
+import "gl"
+
+import "dimensions_pkg"
+import "layer_pkg"
+
+type Screen struct {
+  id str
+  dimensions dimensions_pkg.Dimensions // Same as parent window
+
+  layer_count i32
+  layers [20]layer_pkg.Layer
+}
+
+func newScreen(_id str, _width i32, _height i32) (screen Screen) {
+  screen := Screen{
+    id: _id,
+    dimensions: dimensions_pkg.newDimensions(_width, _height),
+    layer_count: 0}
+}
+
+func addLayerToScreen(layer layer_pkg.Layer, screen Screen) (screen Screen){
+  screen.layers[screen.layer_count] = layer
+  screen.layer_count = i32.add(screen.layer_count, 1)
+}
+
+func updateScreen(mouse_x i32, mouse_y i32, screen Screen) (screen Screen) {
+  for i:=0; i<screen.layer_count; i++ {
+    screen.layers[i] = layer_pkg.updateLayer(mouse_x, mouse_y, screen.layers[i])
+  }
+}
+
+func clickScreen(screen Screen) (screen Screen) {
+  for i:=0; i<screen.layer_count; i++ {
+    screen.layers[i] = layer_pkg.clickLayer(screen.layers[i])
+    if screen.layers[i].pending_callback {
+      screen = screenCallback(screen.layers[i].callback_id, screen)
+      screen.layers[i].pending_callback = false
+    }
+  }
+}
+
+func screenCallback(callback_id str, screen Screen) (screen Screen) {
+  screen.layer_count = 0
+}
+
+func renderScreen(screen Screen) () {
+  for i:=0; i<screen.layer_count; i++ {
+    layer_pkg.renderLayer(screen.layers[i])
+  }
+}
+
+
+package main
+
+import "gl"
+import "glfw"
+import "gltext"
+import "os"
+
+import "constants_pkg"
+
+import "image_pkg"
+import "button_pkg"
+import "textbox_pkg"
+import "spinbox_pkg"
+import "layer_pkg"
+import "screen_pkg"
+
+var screen screen_pkg.Screen
+
+func mouseButtonManager(window str, key i32, scancode i32, action i32, mods i32) {
+	if i32.eq(scancode, 1) && i32.eq(key, glfw.MouseButtonLeft) {
+    screen = screen_pkg.clickScreen(screen)
+	}
+}
+
+func main () {
+  glfw.Init()
+  glfw.WindowHint(glfw.Resizable, glfw.False)
+  glfw.WindowHint(glfw.ContextVersionMajor, 2)
+  glfw.WindowHint(glfw.ContextVersionMinor, 1)
+
+  glfw.CreateWindow("window", constants_pkg.SCREEN_WIDTH, constants_pkg.SCREEN_HEIGHT, "Skycoin Slots")
+  glfw.MakeContextCurrent("window")
+
+  gl.Init()
+  gl.Enable(gl.BLEND)
+  gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+  var program i32
+  program = gl.CreateProgram()
+  gl.LinkProgram(program)
+
+  var x f64
+  var y f64
+
+  var wd str
+	wd = os.GetWorkingDirectory()
+	fontFile := str.concat(wd, "skycoin_light.ttf")
+
+	os.Open(fontFile)
+	gltext.LoadTrueType("SkycoinSans36-Light", fontFile, 36, 32, 127, gltext.LeftToRight)
+  os.Close(fontFile)
+
+  glfw.SetMouseButtonCallback("window", "mouseButtonManager")
+
+  var banner_layer layer_pkg.Layer
+  banner_layer = layer_pkg.newLayer("banner", 0.0, 0.9, constants_pkg.SCREEN_WIDTH, 100, true, true)
+  banner_layer = layer_pkg.addImageToLayer(image_pkg.newImage("banner_background", 0.0, 0.9, constants_pkg.SCREEN_WIDTH, 100, "blue-background.jpg"), banner_layer)
+  banner_layer = layer_pkg.addImageToLayer(image_pkg.newImage("wallet", -0.7, 0.9, 100, 50, "wallet.png"), banner_layer)
+  banner_layer = layer_pkg.addButtonToLayer(button_pkg.newButton("play button", 0.7, 0.9, 120, 45, "PLAY-button-inactive.png", "PLAY-button-active.png"), banner_layer)
+
+  var header_layer layer_pkg.Layer
+  header_layer = layer_pkg.newLayer("header", 0.0, 0.7, constants_pkg.SCREEN_WIDTH, 100, true, true)
+  header_layer = layer_pkg.addImageToLayer(image_pkg.newImage("header", 0.0, 0.7, constants_pkg.SCREEN_WIDTH, 100, "slots-background.png"), header_layer)
+  header_layer = layer_pkg.addImageToLayer(image_pkg.newImage("wallet", -0.65, 0.7, 200, 50, "logoWhite.png"), header_layer)
+
+  //var layer layer_pkg.Layer
+  //layer = layer_pkg.newLayer("layer1", 0.0, 0.0, constants_pkg.SCREEN_WIDTH, constants_pkg.SCREEN_HEIGHT, true, true)
+  //layer = layer_pkg.addImageToLayer(image_pkg.newImage("image1", 0.0, 0.0, constants_pkg.SCREEN_WIDTH, constants_pkg.SCREEN_HEIGHT, "blue-background.jpg"), layer)
+
+  //layer = layer_pkg.addButtonToLayer(button_pkg.newButton("play button", 0.0, 0.0, 360, 130, "PLAY-button-inactive.png", "PLAY-button-active.png"), layer)
+  //layer = layer_pkg.addButtonToLayer(button_pkg.newButton("play button", 0.0, -0.25, 360, 130, "PLAY-button-inactive.png", "PLAY-button-active.png"), layer)
+  //layer = layer_pkg.addButtonToLayer(button_pkg.newButton("delete button", 0.0, -0.5, 360, 130, "PLAY-button-inactive.png", "PLAY-button-active.png"), layer)
+
+  //layer = layer_pkg.addSpinboxToLayer(spinbox_pkg.newSpinbox("SPINBOX", 10, 2, 15, button_pkg.newButton("button1", -0.5, 0.5, 50, 50, "blue-background.jpg", "slots-background.png"), button_pkg.newButton("button2", 0.5, 0.5, 50, 50, "blue-background.jpg", "slots-background.png"), textbox_pkg.newTextbox("textbox1", 0.0, 0.5, "Skycoin", "SkycoinSans36-Light")), layer)
+  //layer = layer_pkg.addButtonToLayer(button_pkg.newButton("button3", -0.5, -0.5, 50, 50, "blue-background.jpg", "slots-background.png"), layer)
+  //layer = layer_pkg.addCheckBoxToLayer(button_pkg.newCheckbox("checkbox1", 0.5, -0.5, 100, 100, "blue-background.jpg", "slots-background.png"), layer)
+  //layer = layer_pkg.addTextboxToLayer(textbox_pkg.newTextbox("textbox1", -0.5, 0.5, "Skycoin\n\n\nSkycoin", "SkycoinSans36-Light"), layer)
+
+  screen = screen_pkg.newScreen("main screen", constants_pkg.SCREEN_WIDTH, constants_pkg.SCREEN_HEIGHT)
+  screen = screen_pkg.addLayerToScreen(banner_layer, screen)
+  screen = screen_pkg.addLayerToScreen(header_layer, screen)
+
+  for bool.not(glfw.ShouldClose("window")) {
+    gl.ClearColor(0.0, 0.0, 0.0, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		gl.LoadIdentity()
+		gl.Enable(gl.TEXTURE_2D)
+		gl.Translatef(0.0, 0.0, 0.0)
+
+    x, y = glfw.GetCursorPos("window")
+
+    screen = screen_pkg.updateScreen(f64.i32(x), f64.i32(y), screen)
+    screen_pkg.renderScreen(screen)
+
+
+    glfw.PollEvents()
+		glfw.SwapBuffers("window")
+  }
+}
